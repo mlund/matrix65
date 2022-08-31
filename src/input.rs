@@ -9,19 +9,23 @@ pub struct Args {
     pub reset: bool,
 
     /// Serial device name
-    #[clap(short = 'p', long)]
+    #[clap(short = 'p', long, required_unless_present("ports"))]
     pub port: String,
+
+    /// Send text string (use "\r" for return)
+    #[clap(long, short = 't')]
+    pub text: Option<String>,
 
     /// Run after loading
     #[clap(long, short = 'r', action)]
     pub run: bool,
-    
+
     /// Load program into memory
     #[clap(long)]
     pub prg: Option<String>,
 
     /// List available serial devices
-    #[clap(long, action)]
+    #[clap(long, action, conflicts_with("port"))]
     pub ports: bool,
 
     /// Baud rate for serial communication

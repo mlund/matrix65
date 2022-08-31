@@ -18,11 +18,15 @@ fn main() {
         serial::hypervisor_info(&mut port);
     }
 
+    if args.text.is_some() {
+        serial::type_text(&mut port, &args.text.unwrap().as_str());
+    }
+
     if args.reset {
         serial::reset(&mut port).unwrap();
     }
 
     if args.run {
-        serial::type_run(&mut port);
+        serial::type_text(&mut port, "list\r");
     }
 }

@@ -30,7 +30,7 @@ pub fn reset(port: &mut Box<dyn SerialPort>) -> Result<(), std::io::Error> {
     port.write_all("!\n".as_bytes())
 }
 
-pub fn type_key(port: &mut Box<dyn SerialPort>, mut key: char) {
+fn type_key(port: &mut Box<dyn SerialPort>, mut key: char) {
     let mut c1: u8 = 0x7f;
     let mut c2 = match key {
         '!' => {
@@ -77,25 +77,25 @@ pub fn type_key(port: &mut Box<dyn SerialPort>, mut key: char) {
     };
 
     match key as u8 {
-        0x03 => c1 = 0x3f, // RUN/STOP
+        0x14 => c1 = 0x00, // INST/DEL
+        0x0d => c1 = 0x01, // Return
         0x1d => c1 = 0x02, // Cursor right
+        0xf7 => c1 = 0x03,
         0x9d => {
             // Cursor left
             c1 = 0x02;
             c2 = 0x0f;
         }
-        0x11 => c1 = 0x07, // Cursor down
-        b'3' => c1 = 0x08,
         0x91 => {
             // Cursor up
             c1 = 0x07;
             c2 = 0x0f;
         }
-        0x0d => c1 = 0x01,
-        0x14 => c1 = 0x00,
-        0xf3 => c1 = 0x05,
-        0xf5 => c1 = 0x06,
-        0xf7 => c1 = 0x03,
+        0xf1 => c2 = 0x04, // F1
+        0xf3 => c1 = 0x05, // F3
+        0xf5 => c1 = 0x06, // F5
+        0x11 => c1 = 0x07, // Cursor down
+        b'3' => c1 = 0x08,
         b'w' => c1 = 0x09,
         b'a' => c1 = 0x0a,
         b'4' => c1 = 0x0b,
@@ -145,34 +145,28 @@ pub fn type_key(port: &mut Box<dyn SerialPort>, mut key: char) {
         b'2' => c1 = 0x3b,
         b' ' => c1 = 0x3c,
         b'q' => c1 = 0x3e,
+        0x03 => c1 = 0x3f, // RUN/STOP
         0x0c => c1 = 0x3f,
         _ => c1 = 0x7f,
     }
 
-    port.write_all(format!("sffd3615 {:02x} {:02x}\n", c1 as u8, c2 as u8).as_bytes())
+    port.write_all(format!("sffd3615 {:02x} {:02x}\n", c1, c2).as_bytes())
         .unwrap();
     thread::sleep(DELAY_KEYPRESS);
 }
 
-pub fn stop_typing(port: &mut Box<dyn SerialPort>) {
+fn stop_typing(port: &mut Box<dyn SerialPort>) {
     port.write_all("sffd3615 7f 7f 7f \n".as_bytes()).unwrap();
     thread::sleep(DELAY_KEYPRESS);
 }
 
-/// Reset the MEGA65
-pub fn type_run(port: &mut Box<dyn SerialPort>) {
-    info!("Typing RUN");
-    port.write_all(format!("sffd3615 {:02x} {:02x}\n", 0x11, 0x7f).as_bytes())
-        .unwrap();
-
-    thread::sleep(DELAY_KEYPRESS);
-
-    port.write_all(format!("sffd3615 {:02x} {:02x}\n", 0x1e, 0x7f).as_bytes())
-        .unwrap();
-    thread::sleep(DELAY_KEYPRESS);
-    port.write_all(format!("sffd3615 {:02x} {:02x}\n", 0x27, 0x7f).as_bytes())
-        .unwrap();
-    thread::sleep(DELAY_KEYPRESS);
+/// Send array of key presses
+pub fn type_text(port: &mut Box<dyn SerialPort>, text: &str) {
+    // Manually translate user defined escape codes:
+    // https://stackoverflow.com/questions/72583983/interpreting-escape-characters-in-a-string-read-from-user-input
+    for key in text.replace("\\r", "\r").chars() {
+        type_key(port, key);
+    }
     stop_typing(port);
 }
 
