@@ -36,10 +36,10 @@ fn start_cpu(port: &mut Box<dyn SerialPort>) {
 /// Print available serial ports
 pub fn print_ports() {
     info!("Detecting serial ports");
-    let ports = serialport::available_ports().expect("No ports found!");
-    for port in ports {
-        println!("{}", port.port_name);
-    }
+    serialport::available_ports()
+        .expect("No ports found!")
+        .iter()
+        .for_each(|port| println!("{}", port.port_name));
 }
 
 /// Open serial port - panic on failure
