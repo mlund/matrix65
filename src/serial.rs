@@ -12,22 +12,23 @@
 // see the license for the specific language governing permissions and
 // limitations under the license.
 
+use hex::FromHex;
 use log::info;
 use serialport::SerialPort;
 use std::thread;
 use std::time::Duration;
 
-// Serial device operations
-
 /// Delay between sending key presses
 const DELAY_KEYPRESS: Duration = Duration::from_micros(20000);
 
 fn stop_cpu(port: &mut Box<dyn SerialPort>) {
+    port.flush().unwrap();
     port.write_all("t1\r".as_bytes()).unwrap();
     thread::sleep(DELAY_KEYPRESS);
 }
 
 fn start_cpu(port: &mut Box<dyn SerialPort>) {
+    port.flush().unwrap();
     port.write_all("t0\r".as_bytes()).unwrap();
     thread::sleep(DELAY_KEYPRESS);
 }
@@ -219,23 +220,45 @@ pub fn hypervisor_info(port: &mut Box<dyn SerialPort>) {
     }
 }
 
-/// Copy chunks of data to MEGA65 at 200 kB/s at default baud rate
-pub fn load_memory(port: &mut Box<dyn SerialPort>, load_address: u16, bytes: &[u8]) {
-    info!(
-        "Loading {} bytes to address 0x{:x}",
-        bytes.len(),
-        load_address
-    );
+/// Loads memory from MEGA65 starting at given address
+pub fn load_memory(port: &mut Box<dyn SerialPort>, address : u32, length: usize) -> Vec<u8> {
     stop_cpu(port);
-    port.write_all(
-        format!(
-            "l{:x} {:x}\r",
-            load_address,
-            load_address + bytes.len() as u16
-        )
-        .as_bytes(),
-    )
-    .unwrap();
+    port.write_all(format!("m{:x}\r", address).as_bytes())
+        .unwrap();
+    thread::sleep(DELAY_KEYPRESS);
+
+    let mut buffer = Vec::new();
+    let mut bytes = Vec::new();
+    bytes.reserve(length);
+
+    // skip header
+    buffer.resize(24, 0);
+    port.read_exact(&mut buffer).unwrap();
+
+    while bytes.len() < length {
+        // load 16 two-letter byte codes
+        buffer.resize(16 * 2, 0);
+        port.read_exact(&mut buffer).expect("buffer load error");
+        // convert two-letter codes to bytes
+        let mut sixteen_bytes: Vec<u8> = Vec::from_hex(&buffer).expect("invalid hex");
+        bytes.append(&mut sixteen_bytes);
+        // trigger next memory dump and ignore header
+        port.write_all(format!("m\r").as_bytes()).unwrap();
+        thread::sleep(DELAY_KEYPRESS);
+        buffer.resize(18, 0);
+        port.read_exact(&mut buffer).expect("buffer load error");
+    }
+    start_cpu(port);
+    bytes.truncate(length);
+    bytes
+}
+
+/// Copy chunks of data to MEGA65 at 200 kB/s at default baud rate
+pub fn write_memory(port: &mut Box<dyn SerialPort>, address: u16, bytes: &[u8]) {
+    info!("Loading {} bytes to address 0x{:x}", bytes.len(), address);
+    stop_cpu(port);
+    port.write_all(format!("l{:x} {:x}\r", address, address + bytes.len() as u16).as_bytes())
+        .unwrap();
     port.write_all(bytes).unwrap();
     start_cpu(port);
 }

@@ -16,9 +16,10 @@ PR's are very welcome!
 - [x] Cross platform serial device detection
 - [x] Fancy CLI interface with subcommands
 - [x] List available serial ports
-- [x] Send and run `.prg` files
+- [x] Send and run `.prg` file
 - [x] Send sequence of key-presses
 - [x] Reset MEGA65
+- [x] Peek into memory; hexdump
 - [ ] Switch to C64 mode when 0x0801 load address is detected
 - [ ] Load at arbitrary address and optionally start with `SYS`
 - [ ] Memory dumps in YAML format

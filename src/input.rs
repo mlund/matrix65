@@ -44,6 +44,17 @@ pub enum Commands {
 
     /// Reset MEGA65
     Reset {},
+
+    /// Peek into memory
+    #[clap(arg_required_else_help = true)]
+    Peek {
+        /// Address to peek into (e.g. 4096, 0x4000)
+        #[clap(long, short = 'a')]
+        address: String,
+        /// Number of bytes to retrieve
+        #[clap(long, short = 'l')]
+        length: usize,
+    },
 }
 
 #[derive(Parser)]

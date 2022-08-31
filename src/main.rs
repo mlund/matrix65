@@ -13,6 +13,7 @@
 // limitations under the license.
 
 use clap::Parser;
+use parse_int::parse;
 
 mod input;
 mod io;
@@ -44,12 +45,19 @@ fn main() {
         input::Commands::Prg { file, run } => {
             let (load_address, bytes) = io::load_file_with_load_address(&file).expect("load error");
             match load_address {
-                0x2001 => serial::load_memory(&mut port, load_address, &bytes),
+                0x2001 => serial::write_memory(&mut port, load_address, &bytes),
                 0x0801 => todo!("c64 load address"),
                 _ => todo!("arbitrary load address"),
             }
             if run {
                 serial::type_text(&mut port, "run\r");
+            }
+        }
+
+        input::Commands::Peek { address, length } => {
+            let bytes = serial::load_memory(&mut port, parse::<u32>(&address).unwrap(), length);
+            for byte in bytes {
+                print!("{:02x} ", byte);
             }
         }
     }
