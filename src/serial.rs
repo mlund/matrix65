@@ -6,6 +6,16 @@ use std::time::Duration;
 /// Delay between sending key presses
 const DELAY_KEYPRESS: Duration = Duration::from_micros(20000);
 
+pub fn stop_cpu(port: &mut Box<dyn SerialPort>) {
+    port.write_all("t1\r".as_bytes()).unwrap();
+    thread::sleep(DELAY_KEYPRESS);
+}
+
+pub fn start_cpu(port: &mut Box<dyn SerialPort>) {
+    port.write_all("t0\r".as_bytes()).unwrap();
+    thread::sleep(DELAY_KEYPRESS);
+}
+
 /// Print available serial ports
 pub fn print_ports() {
     info!("Detecting serial ports.");
@@ -164,6 +174,7 @@ fn stop_typing(port: &mut Box<dyn SerialPort>) {
 pub fn type_text(port: &mut Box<dyn SerialPort>, text: &str) {
     // Manually translate user defined escape codes:
     // https://stackoverflow.com/questions/72583983/interpreting-escape-characters-in-a-string-read-from-user-input
+    info!("Typing text");
     for key in text.replace("\\r", "\r").chars() {
         type_key(port, key);
     }
@@ -178,4 +189,25 @@ pub fn hypervisor_info(port: &mut Box<dyn SerialPort>) {
     port.read_to_string(&mut buffer)
         .expect("Serial read error - likely non-unicode data");
     print!("{}", buffer);
+}
+
+/// Copy chunks of data to MEGA65 at 200 kB/s at default baud rate
+pub fn load_memory(port: &mut Box<dyn SerialPort>, load_address: u16, bytes: &[u8]) {
+    info!(
+        "Loading {} bytes to address 0x{:x}",
+        bytes.len(),
+        load_address
+    );
+    stop_cpu(port);
+    port.write_all(
+        format!(
+            "l{:x} {:x}\r",
+            load_address,
+            load_address + (bytes.len()) as u16
+        )
+        .as_bytes(),
+    )
+    .unwrap();
+    port.write_all(&bytes).unwrap();
+    start_cpu(port);
 }

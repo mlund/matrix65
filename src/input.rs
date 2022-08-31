@@ -17,16 +17,16 @@ pub enum Commands {
     /// Get MEGA65 info
     Info {},
 
-    /// Send key presses
+    /// Send key presses ("\r" for return)
     #[clap(arg_required_else_help = true)]
     Type {
-        #[clap(value_parser, short = 't')]
+        #[clap(long, short = 't')]
         text: String,
     },
 
     /// List available serial devices
     List {},
-    
+
     /// Reset MEGA65
     Reset {},
 }
