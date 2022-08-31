@@ -194,9 +194,10 @@ pub fn type_text(port: &mut Box<dyn SerialPort>, text: &str) {
     // Manually translate user defined escape codes:
     // https://stackoverflow.com/questions/72583983/interpreting-escape-characters-in-a-string-read-from-user-input
     info!("Typing text");
-    for key in text.replace("\\r", "\r").replace("\\n", "\r").chars() {
-        type_key(port, key);
-    }
+    text.replace("\\r", "\r")
+        .replace("\\n", "\r")
+        .chars()
+        .for_each(|key| type_key(port, key));
     stop_typing(port);
 }
 
