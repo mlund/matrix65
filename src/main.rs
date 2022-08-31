@@ -14,8 +14,8 @@
 
 use clap::Parser;
 
-mod io;
 mod input;
+mod io;
 mod serial;
 
 fn main() {
@@ -42,7 +42,7 @@ fn main() {
         }
 
         input::Commands::Prg { file, run } => {
-            let (load_address, bytes) = io::load_file_with_load_address(&file);
+            let (load_address, bytes) = io::load_file_with_load_address(&file).expect("load error");
             match load_address {
                 0x2001 => serial::load_memory(&mut port, load_address, &bytes),
                 0x0801 => todo!("c64 load address"),

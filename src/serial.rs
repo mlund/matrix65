@@ -207,7 +207,8 @@ pub fn hypervisor_info(port: &mut Box<dyn SerialPort>) {
     thread::sleep(DELAY_KEYPRESS);
     let mut buffer = Vec::new();
     buffer.resize(1024, 0);
-    let n = port.read(&mut buffer)
+    let n = port
+        .read(&mut buffer)
         .expect("Serial read error - likely non-unicode data");
     println!("{}", n);
 
