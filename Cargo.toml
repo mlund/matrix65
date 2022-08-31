@@ -1,0 +1,27 @@
+[package]
+name = "matrix65"
+description = "Matrix Mode Serial Communicator for MEGA65"
+version = "0.1.0"
+edition = "2021"
+authors = ["Mikael Lund <lyssky@icloud.com>"]
+homepage = "https://github.com/mlund/matrix65"
+repository = "https://github.com/mlund/matrix65"
+documentation = "https://docs.rs/matrix65"
+license = "MIT OR Apache-2.0"
+readme = "README.md"
+keywords = ["mega65", "serial", "8-bit"]
+categories = ["command-line-utilities"]
+
+# See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
+
+[dependencies]
+serialport = "4.2.0"
+clap = { version = "3.2.18", features = ["derive"] }
+log = "0.4"
+pretty_env_logger = "0.4.0"
+
+[profile.release]
+strip = true     # Automatically strip symbols from the binary.
+opt-level = "z"  # Optimize for size.
+lto = true       # Link-time optimization
+
