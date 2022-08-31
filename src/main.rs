@@ -1,11 +1,22 @@
-use clap::Parser;
-use log::info;
-use std::io::Read;
+// copyright 2022 mikael lund aka wombat
+//
+// licensed under the apache license, version 2.0 (the "license");
+// you may not use this file except in compliance with the license.
+// you may obtain a copy of the license at
+//
+//     http://www.apache.org/licenses/license-2.0
+//
+// unless required by applicable law or agreed to in writing, software
+// distributed under the license is distributed on an "as is" basis,
+// without warranties or conditions of any kind, either express or implied.
+// see the license for the specific language governing permissions and
+// limitations under the license.
 
+use clap::Parser;
+
+mod io;
 mod input;
 mod serial;
-
-// /dev/cu.usbserial-AQ027F6E
 
 fn main() {
     pretty_env_logger::init();
@@ -18,7 +29,8 @@ fn main() {
         }
 
         input::Commands::Info {} => {
-            serial::hypervisor_info(&mut port);
+            todo!("coming soon");
+            //serial::hypervisor_info(&mut port);
         }
 
         input::Commands::Reset {} => {
@@ -26,11 +38,11 @@ fn main() {
         }
 
         input::Commands::Type { text } => {
-            serial::type_text(&mut port, &text.as_str());
+            serial::type_text(&mut port, text.as_str());
         }
 
         input::Commands::Prg { file, run } => {
-            let (load_address, bytes) = load_file_with_load_address(file);
+            let (load_address, bytes) = io::load_file_with_load_address(&file);
             match load_address {
                 0x2001 => serial::load_memory(&mut port, load_address, &bytes),
                 0x0801 => todo!("c64 load address"),
@@ -41,27 +53,4 @@ fn main() {
             }
         }
     }
-}
-
-/// Load a prg file into a vector
-///
-/// Returns intended load address and raw bytes
-fn load_file_with_load_address(filename: String) -> (u16, Vec<u8>) {
-    let mut bytes = Vec::new();
-    std::fs::File::open(&filename)
-        .expect("could not open file")
-        .by_ref()
-        .read_to_end(&mut bytes)
-        .unwrap();
-    // the first two bytes form the 16-bit load address, little endian
-    let load_address = u16::from_le_bytes(bytes[0..2].try_into().unwrap());
-    info!(
-        "Read {} bytes from {}; load address = 0x{:x}",
-        bytes.len(),
-        &filename,
-        load_address
-    );
-    bytes.remove(0); // yikes...
-    bytes.remove(1);
-    (load_address, bytes)
 }

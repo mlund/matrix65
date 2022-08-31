@@ -1,24 +1,40 @@
+// copyright 2022 mikael lund aka wombat
+//
+// licensed under the apache license, version 2.0 (the "license");
+// you may not use this file except in compliance with the license.
+// you may obtain a copy of the license at
+//
+//     http://www.apache.org/licenses/license-2.0
+//
+// unless required by applicable law or agreed to in writing, software
+// distributed under the license is distributed on an "as is" basis,
+// without warranties or conditions of any kind, either express or implied.
+// see the license for the specific language governing permissions and
+// limitations under the license.
+
 use log::info;
 use serialport::SerialPort;
 use std::thread;
 use std::time::Duration;
 
+// Serial device operations
+
 /// Delay between sending key presses
 const DELAY_KEYPRESS: Duration = Duration::from_micros(20000);
 
-pub fn stop_cpu(port: &mut Box<dyn SerialPort>) {
+fn stop_cpu(port: &mut Box<dyn SerialPort>) {
     port.write_all("t1\r".as_bytes()).unwrap();
     thread::sleep(DELAY_KEYPRESS);
 }
 
-pub fn start_cpu(port: &mut Box<dyn SerialPort>) {
+fn start_cpu(port: &mut Box<dyn SerialPort>) {
     port.write_all("t0\r".as_bytes()).unwrap();
     thread::sleep(DELAY_KEYPRESS);
 }
 
 /// Print available serial ports
 pub fn print_ports() {
-    info!("Detecting serial ports.");
+    info!("Detecting serial ports");
     let ports = serialport::available_ports().expect("No ports found!");
     for port in ports {
         println!("{}", port.port_name);
@@ -40,6 +56,7 @@ pub fn reset(port: &mut Box<dyn SerialPort>) -> Result<(), std::io::Error> {
     port.write_all("!\n".as_bytes())
 }
 
+/// Translate and type a single letter on MEGA65
 fn type_key(port: &mut Box<dyn SerialPort>, mut key: char) {
     let mut c1: u8 = 0x7f;
     let mut c2 = match key {
@@ -165,6 +182,7 @@ fn type_key(port: &mut Box<dyn SerialPort>, mut key: char) {
     thread::sleep(DELAY_KEYPRESS);
 }
 
+/// Call this when done typing
 fn stop_typing(port: &mut Box<dyn SerialPort>) {
     port.write_all("sffd3615 7f 7f 7f \n".as_bytes()).unwrap();
     thread::sleep(DELAY_KEYPRESS);
@@ -175,20 +193,29 @@ pub fn type_text(port: &mut Box<dyn SerialPort>, text: &str) {
     // Manually translate user defined escape codes:
     // https://stackoverflow.com/questions/72583983/interpreting-escape-characters-in-a-string-read-from-user-input
     info!("Typing text");
-    for key in text.replace("\\r", "\r").chars() {
+    for key in text.replace("\\r", "\r").replace("\\n", "\r").chars() {
         type_key(port, key);
     }
     stop_typing(port);
 }
 
 /// Get MEGA65 info
+#[allow(dead_code)]
 pub fn hypervisor_info(port: &mut Box<dyn SerialPort>) {
     info!("Requesting serial monitor info");
-    let mut buffer = String::new();
     port.write_all("h\n".as_bytes()).expect("Write failed!");
-    port.read_to_string(&mut buffer)
+    thread::sleep(DELAY_KEYPRESS);
+    let mut buffer = Vec::new();
+    buffer.resize(1024, 0);
+    let n = port.read(&mut buffer)
         .expect("Serial read error - likely non-unicode data");
-    print!("{}", buffer);
+    println!("{}", n);
+
+    for i in buffer {
+        if i.is_ascii() {
+            print!("{}", i as char);
+        }
+    }
 }
 
 /// Copy chunks of data to MEGA65 at 200 kB/s at default baud rate
@@ -203,11 +230,11 @@ pub fn load_memory(port: &mut Box<dyn SerialPort>, load_address: u16, bytes: &[u
         format!(
             "l{:x} {:x}\r",
             load_address,
-            load_address + (bytes.len()) as u16
+            load_address + bytes.len() as u16
         )
         .as_bytes(),
     )
     .unwrap();
-    port.write_all(&bytes).unwrap();
+    port.write_all(bytes).unwrap();
     start_cpu(port);
 }

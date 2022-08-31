@@ -1,6 +1,20 @@
-use clap::{Parser, Subcommand};
-/// Matrix Mode Serial Communicator for MEGA65
+// copyright 2022 mikael lund aka wombat
+//
+// licensed under the apache license, version 2.0 (the "license");
+// you may not use this file except in compliance with the license.
+// you may obtain a copy of the license at
+//
+//     http://www.apache.org/licenses/license-2.0
+//
+// unless required by applicable law or agreed to in writing, software
+// distributed under the license is distributed on an "as is" basis,
+// without warranties or conditions of any kind, either express or implied.
+// see the license for the specific language governing permissions and
+// limitations under the license.
 
+use clap::{Parser, Subcommand};
+
+/// Matrix Mode Serial Communicator for MEGA65
 #[derive(Debug, Subcommand)]
 pub enum Commands {
     /// Push and run program file
@@ -17,9 +31,10 @@ pub enum Commands {
     /// Get MEGA65 info
     Info {},
 
-    /// Send key presses ("\r" for return)
+    /// Send key presses
     #[clap(arg_required_else_help = true)]
     Type {
+        /// Text to type - use "\r" for return
         #[clap(long, short = 't')]
         text: String,
     },
@@ -32,7 +47,7 @@ pub enum Commands {
 }
 
 #[derive(Parser)]
-#[clap(version, about, long_about = None, author = "Copyright (c) 2022 Wombat - MIT Licensed")]
+#[clap(version, about, long_about = None, author = "Copyright (c) 2022 Wombat - Apache/MIT Licensed")]
 pub struct Args {
     #[clap(subcommand)]
     pub command: Commands,
