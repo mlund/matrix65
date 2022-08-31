@@ -221,8 +221,10 @@ pub fn hypervisor_info(port: &mut Box<dyn SerialPort>) {
 }
 
 /// Loads memory from MEGA65 starting at given address
-pub fn load_memory(port: &mut Box<dyn SerialPort>, address : u32, length: usize) -> Vec<u8> {
+pub fn load_memory(port: &mut Box<dyn SerialPort>, address: u32, length: usize) -> Vec<u8> {
+    info!("Loading {} bytes from 0x{:x}", length, address);
     stop_cpu(port);
+    // request memory dump (MEMORY, "M" command)
     port.write_all(format!("m{:x}\r", address).as_bytes())
         .unwrap();
     thread::sleep(DELAY_KEYPRESS);

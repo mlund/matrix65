@@ -8,13 +8,14 @@ albeit written entirely in **Rust**.
 ## Features and current status
 
 As of writing, the list of functionality is inferior to `m65`, but
-expect new features over time.
+expect more features over time.
 Should you be interested in exploring Rust programming,
-PR's are very welcome!
+PR's are welcome.
 
 - [x] World-class memory safety due to Rust
 - [x] Cross platform serial device detection
 - [x] Fancy CLI interface with subcommands
+- [x] Logging with e.g. `export RUST_LOG=info`
 - [x] List available serial ports
 - [x] Send and run `.prg` file
 - [x] Send sequence of key-presses

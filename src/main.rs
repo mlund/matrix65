@@ -56,9 +56,13 @@ fn main() {
 
         input::Commands::Peek { address, length } => {
             let bytes = serial::load_memory(&mut port, parse::<u32>(&address).unwrap(), length);
-            for byte in bytes {
-                print!("{:02x} ", byte);
+            for (cnt, byte) in bytes.iter().enumerate() {
+                print!("0x{:02x} ", byte);
+                if (cnt + 1) % 16 == 0 {
+                    print!("\n");
+                }
             }
+            print!("\n");
         }
     }
 }
