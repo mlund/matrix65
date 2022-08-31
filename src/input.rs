@@ -12,6 +12,14 @@ pub struct Args {
     #[clap(short = 'p', long)]
     pub port: String,
 
+    /// Run after loading
+    #[clap(long, short = 'r', action)]
+    pub run: bool,
+    
+    /// Load program into memory
+    #[clap(long)]
+    pub prg: Option<String>,
+
     /// List available serial devices
     #[clap(long, action)]
     pub ports: bool,

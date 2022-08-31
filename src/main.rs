@@ -1,8 +1,5 @@
 use clap::Parser;
 
-extern crate log;
-extern crate pretty_env_logger;
-
 mod input;
 mod serial;
 
@@ -23,5 +20,9 @@ fn main() {
 
     if args.reset {
         serial::reset(&mut port).unwrap();
+    }
+
+    if args.run {
+        serial::type_run(&mut port);
     }
 }
