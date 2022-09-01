@@ -29,9 +29,9 @@ pub fn load_file(filename: &str) -> std::io::Result<Vec<u8>> {
 /// Load a prg file into a vector and detect load address
 ///
 /// The two bytes form the 16-bit load address, little endian.
-/// Returns intended load address and raw bytes (sans the first two)
+/// Returns intended load address and raw bytes (excluding the first two bytes)
 pub fn load_file_with_load_address(filename: &String) -> std::io::Result<(u16, Vec<u8>)> {
-    let mut bytes = load_file(filename)?;
+    let bytes = load_file(filename)?;
     let load_address = u16::from_le_bytes(bytes[0..2].try_into().unwrap());
     info!(
         "Read {} bytes from {}; load address = 0x{:x}",
@@ -39,7 +39,5 @@ pub fn load_file_with_load_address(filename: &String) -> std::io::Result<(u16, V
         &filename,
         load_address
     );
-    bytes.remove(0); // yikes...
-    bytes.remove(1);
-    Ok((load_address, bytes))
+    Ok((load_address, bytes[2..].to_vec()))
 }

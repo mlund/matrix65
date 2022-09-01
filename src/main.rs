@@ -26,7 +26,6 @@ fn do_main() -> Result<(), Box<dyn Error>> {
     let mut port = serial::open_port(&args.port, args.baud)?;
 
     match args.command {
-
         input::Commands::Info {} => {
             serial::hypervisor_info(&mut port);
         }

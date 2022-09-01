@@ -13,7 +13,7 @@
 // limitations under the license.
 
 use hex::FromHex;
-use log::{info, debug};
+use log::{debug, info};
 use serialport::SerialPort;
 use std::thread;
 use std::time::Duration;
@@ -52,14 +52,15 @@ pub fn open_port(name: &String, baud_rate: u32) -> Result<Box<dyn SerialPort>, s
     debug!("Opening serial port {}", name);
     match serialport::new(name, baud_rate)
         .timeout(Duration::from_millis(10))
-        .open() {
-            Ok(port) => Ok(port),
-            Err(err) => {
-                println!("Available serial ports:\n");
-                print_ports();
-                Err(err)
-            }
+        .open()
+    {
+        Ok(port) => Ok(port),
+        Err(err) => {
+            println!("Available serial ports:\n");
+            print_ports();
+            Err(err)
         }
+    }
 }
 
 /// Reset the MEGA65
@@ -221,10 +222,8 @@ pub fn hypervisor_info(port: &mut Box<dyn SerialPort>) {
 
     let mut buffer = Vec::new();
     buffer.resize(65, 0);
-    port
-        .read_exact(&mut buffer)
-        .expect("serial read error");
-    let lines = buffer.split(|i|{*i == b'\n'});
+    port.read_exact(&mut buffer).expect("serial read error");
+    let lines = buffer.split(|i| *i == b'\n');
     for line in lines {
         for i in line {
             print!("{}", *i as char);
@@ -269,10 +268,15 @@ pub fn load_memory(port: &mut Box<dyn SerialPort>, address: u32, length: usize) 
 }
 
 /// Copy chunks of data to MEGA65 at 200 kB/s at default baud rate
-pub fn write_memory(port: &mut Box<dyn SerialPort>, address: u16, bytes: &[u8]) -> std::io::Result<()> {
+pub fn write_memory(
+    port: &mut Box<dyn SerialPort>,
+    address: u16,
+    bytes: &[u8],
+) -> std::io::Result<()> {
     info!("Writing {} bytes to address 0x{:x}", bytes.len(), address);
     stop_cpu(port)?;
-    port.write_all(format!("l{:x} {:x}\r", address, address + bytes.len() as u16).as_bytes()).unwrap();
+    port.write_all(format!("l{:x} {:x}\r", address, address + bytes.len() as u16).as_bytes())
+        .unwrap();
     port.write_all(bytes)?;
     start_cpu(port)?;
     Ok(())
