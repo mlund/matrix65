@@ -256,7 +256,7 @@ pub fn load_memory(
     info!("Loading {} bytes from 0x{:x}", length, address);
     stop_cpu(port)?;
     // request memory dump (MEMORY, "M" command)
-    port.write_all(format!("m{:x}\r", address).as_bytes())?;
+    port.write_all(format!("m{:07x}\r", address).as_bytes())?;
     thread::sleep(DELAY_KEYPRESS);
 
     let mut buffer = Vec::new();
@@ -264,7 +264,7 @@ pub fn load_memory(
     bytes.reserve(length);
 
     // skip header
-    buffer.resize(24, 0);
+    buffer.resize(27, 0);
     port.read_exact(&mut buffer)?;
 
     while bytes.len() < length {
