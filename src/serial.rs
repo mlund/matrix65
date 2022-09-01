@@ -48,7 +48,7 @@ pub fn print_ports() {
 }
 
 /// Open serial port - show available ports and stop if invalid
-pub fn open_port(name: &String, baud_rate: u32) -> Result<Box<dyn SerialPort>, serialport::Error> {
+pub fn open_port(name: &str, baud_rate: u32) -> Result<Box<dyn SerialPort>, serialport::Error> {
     debug!("Opening serial port {}", name);
     match serialport::new(name, baud_rate)
         .timeout(Duration::from_millis(10))

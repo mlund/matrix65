@@ -12,10 +12,10 @@
 // see the license for the specific language governing permissions and
 // limitations under the license.
 
+/// File I/O
+
 use log::info;
 use std::io::Read;
-
-// File I/O
 
 /// Load file into byte vector
 pub fn load_file(filename: &str) -> std::io::Result<Vec<u8>> {
