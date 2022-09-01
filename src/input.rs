@@ -39,9 +39,6 @@ pub enum Commands {
         text: String,
     },
 
-    /// List available serial devices
-    List {},
-
     /// Reset MEGA65
     Reset {},
 
@@ -52,7 +49,7 @@ pub enum Commands {
         #[clap(long, short = 'a')]
         address: String,
         /// Number of bytes to retrieve
-        #[clap(long, short = 'l')]
+        #[clap(long, short = 'l', default_value_t = 1)]
         length: usize,
     },
 }
@@ -63,7 +60,7 @@ pub struct Args {
     #[clap(subcommand)]
     pub command: Commands,
 
-    /// Serial device name
+    /// Serial device name. Use --port=? to see list of ports.
     #[clap(short = 'p', long)]
     pub port: String,
 

@@ -14,20 +14,18 @@
 
 use clap::Parser;
 use parse_int::parse;
+use std::error::Error;
 
 mod input;
 mod io;
 mod serial;
 
-fn main() {
+fn do_main() -> Result<(), Box<dyn Error>> {
     pretty_env_logger::init();
     let args = input::Args::parse();
-    let mut port = serial::open_port(&args.port, args.baud);
+    let mut port = serial::open_port(&args.port, args.baud)?;
 
     match args.command {
-        input::Commands::List {} => {
-            serial::print_ports();
-        }
 
         input::Commands::Info {} => {
             todo!("coming soon");
@@ -35,7 +33,7 @@ fn main() {
         }
 
         input::Commands::Reset {} => {
-            serial::reset(&mut port).unwrap();
+            serial::reset(&mut port)?;
         }
 
         input::Commands::Type { text } => {
@@ -43,7 +41,7 @@ fn main() {
         }
 
         input::Commands::Prg { file, run } => {
-            let (load_address, bytes) = io::load_file_with_load_address(&file).expect("load error");
+            let (load_address, bytes) = io::load_file_with_load_address(&file)?;
             match load_address {
                 0x2001 => serial::write_memory(&mut port, load_address, &bytes),
                 0x0801 => todo!("c64 load address"),
@@ -55,7 +53,7 @@ fn main() {
         }
 
         input::Commands::Peek { address, length } => {
-            let bytes = serial::load_memory(&mut port, parse::<u32>(&address).unwrap(), length);
+            let bytes = serial::load_memory(&mut port, parse::<u32>(&address)?, length);
             for (cnt, byte) in bytes.iter().enumerate() {
                 print!("0x{:02x} ", byte);
                 if (cnt + 1) % 16 == 0 {
@@ -64,5 +62,13 @@ fn main() {
             }
             print!("\n");
         }
+    }
+    Ok(())
+}
+
+fn main() {
+    if let Err(err) = do_main() {
+        println!("Error: {}", &err);
+        std::process::exit(1);
     }
 }

@@ -12,11 +12,10 @@ expect more features over time.
 Should you be interested in exploring Rust programming,
 PR's are welcome.
 
-- [x] World-class memory safety due to Rust
+- [x] World-class memory safety thanks to Rust
 - [x] Cross platform serial device detection
 - [x] Fancy CLI interface with subcommands
 - [x] Logging with e.g. `export RUST_LOG=info`
-- [x] List available serial ports
 - [x] Send and run `.prg` file
 - [x] Send sequence of key-presses
 - [x] Reset MEGA65

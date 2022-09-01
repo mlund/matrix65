@@ -13,7 +13,7 @@
 // limitations under the license.
 
 use hex::FromHex;
-use log::info;
+use log::{info, debug};
 use serialport::SerialPort;
 use std::thread;
 use std::time::Duration;
@@ -35,20 +35,27 @@ fn start_cpu(port: &mut Box<dyn SerialPort>) {
 
 /// Print available serial ports
 pub fn print_ports() {
-    info!("Detecting serial ports");
+    debug!("Detecting serial ports");
     serialport::available_ports()
-        .expect("No ports found!")
+        .expect("No serial ports found!")
         .iter()
         .for_each(|port| println!("{}", port.port_name));
+    print!("\n");
 }
 
-/// Open serial port - panic on failure
-pub fn open_port(name: &String, baud_rate: u32) -> Box<dyn SerialPort> {
+/// Open serial port - show available ports and stop if invalid
+pub fn open_port(name: &String, baud_rate: u32) -> Result<Box<dyn SerialPort>, serialport::Error> {
     info!("Opening serial port {}", name);
-    serialport::new(name, baud_rate)
+    match serialport::new(name, baud_rate)
         .timeout(Duration::from_millis(10))
-        .open()
-        .expect("Failed to open port")
+        .open() {
+            Ok(port) => Ok(port),
+            Err(err) => {
+                println!("Available serial ports:\n");
+                print_ports();
+                return Err(err);
+            }
+        }
 }
 
 /// Reset the MEGA65
