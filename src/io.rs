@@ -43,7 +43,7 @@ pub fn load_file_with_load_address(filename: &str) -> std::io::Result<(u16, Vec<
 /// Save bytes to binary file
 pub fn save_binary(filename: &str, bytes: &[u8]) -> std::io::Result<()> {
     info!("Saving {} bytes to {}", bytes.len(), filename);
-    File::create(filename)?.write_all(&bytes)
+    File::create(filename)?.write_all(bytes)
 }
 
 /// Print bytes to screen

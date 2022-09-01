@@ -242,12 +242,11 @@ pub fn hypervisor_info(port: &mut Box<dyn SerialPort>) {
 }
 
 /// Loads memory from MEGA65 starting at given address
-pub fn load_memory(port: &mut Box<dyn SerialPort>, address: u32, length: usize) -> Vec<u8> {
+pub fn load_memory(port: &mut Box<dyn SerialPort>, address: u32, length: usize) -> Result<Vec<u8>, std::io::Error> {
     info!("Loading {} bytes from 0x{:x}", length, address);
-    stop_cpu(port).unwrap();
+    stop_cpu(port)?;
     // request memory dump (MEMORY, "M" command)
-    port.write_all(format!("m{:x}\r", address).as_bytes())
-        .unwrap();
+    port.write_all(format!("m{:x}\r", address).as_bytes())?;
     thread::sleep(DELAY_KEYPRESS);
 
     let mut buffer = Vec::new();
@@ -256,24 +255,24 @@ pub fn load_memory(port: &mut Box<dyn SerialPort>, address: u32, length: usize) 
 
     // skip header
     buffer.resize(24, 0);
-    port.read_exact(&mut buffer).unwrap();
+    port.read_exact(&mut buffer)?;
 
     while bytes.len() < length {
         // load 16 two-letter byte codes
         buffer.resize(16 * 2, 0);
-        port.read_exact(&mut buffer).expect("buffer load error");
+        port.read_exact(&mut buffer)?;
         // convert two-letter codes to bytes
         let mut sixteen_bytes: Vec<u8> = Vec::from_hex(&buffer).expect("invalid hex");
         bytes.append(&mut sixteen_bytes);
         // trigger next memory dump and ignore header
-        port.write_all("m\r".to_string().as_bytes()).unwrap();
+        port.write_all("m\r".to_string().as_bytes())?;
         thread::sleep(DELAY_KEYPRESS);
         buffer.resize(18, 0);
-        port.read_exact(&mut buffer).expect("buffer load error");
+        port.read_exact(&mut buffer)?;
     }
-    start_cpu(port).unwrap();
+    start_cpu(port)?;
     bytes.truncate(length);
-    bytes
+    Ok(bytes)
 }
 
 /// Copy chunks of data to MEGA65 at 200 kB/s at default baud rate
