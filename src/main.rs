@@ -28,8 +28,7 @@ fn do_main() -> Result<(), Box<dyn Error>> {
     match args.command {
 
         input::Commands::Info {} => {
-            todo!("coming soon");
-            //serial::hypervisor_info(&mut port);
+            serial::hypervisor_info(&mut port);
         }
 
         input::Commands::Reset {} => {
@@ -43,7 +42,7 @@ fn do_main() -> Result<(), Box<dyn Error>> {
         input::Commands::Prg { file, run } => {
             let (load_address, bytes) = io::load_file_with_load_address(&file)?;
             match load_address {
-                0x2001 => serial::write_memory(&mut port, load_address, &bytes),
+                0x2001 => serial::write_memory(&mut port, load_address, &bytes)?,
                 0x0801 => todo!("c64 load address"),
                 _ => todo!("arbitrary load address"),
             }
@@ -56,11 +55,11 @@ fn do_main() -> Result<(), Box<dyn Error>> {
             let bytes = serial::load_memory(&mut port, parse::<u32>(&address)?, length);
             for (cnt, byte) in bytes.iter().enumerate() {
                 print!("0x{:02x} ", byte);
-                if (cnt + 1) % 16 == 0 {
-                    print!("\n");
+                if (cnt + 1) % 8 == 0 {
+                    println!();
                 }
             }
-            print!("\n");
+            println!();
         }
     }
     Ok(())

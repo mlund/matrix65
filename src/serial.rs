@@ -21,16 +21,20 @@ use std::time::Duration;
 /// Delay between sending key presses
 const DELAY_KEYPRESS: Duration = Duration::from_micros(20000);
 
-fn stop_cpu(port: &mut Box<dyn SerialPort>) {
-    port.flush().unwrap();
-    port.write_all("t1\r".as_bytes()).unwrap();
+fn stop_cpu(port: &mut Box<dyn SerialPort>) -> std::io::Result<()> {
+    port.flush()?;
+    port.write_all("t1\r".as_bytes())?;
+    port.flush()?;
     thread::sleep(DELAY_KEYPRESS);
+    Ok(())
 }
 
-fn start_cpu(port: &mut Box<dyn SerialPort>) {
-    port.flush().unwrap();
-    port.write_all("t0\r".as_bytes()).unwrap();
+fn start_cpu(port: &mut Box<dyn SerialPort>) -> std::io::Result<()> {
+    port.flush()?;
+    port.write_all("t0\r".as_bytes())?;
+    port.flush()?;
     thread::sleep(DELAY_KEYPRESS);
+    Ok(())
 }
 
 /// Print available serial ports
@@ -40,12 +44,12 @@ pub fn print_ports() {
         .expect("No serial ports found!")
         .iter()
         .for_each(|port| println!("{}", port.port_name));
-    print!("\n");
+    println!();
 }
 
 /// Open serial port - show available ports and stop if invalid
 pub fn open_port(name: &String, baud_rate: u32) -> Result<Box<dyn SerialPort>, serialport::Error> {
-    info!("Opening serial port {}", name);
+    debug!("Opening serial port {}", name);
     match serialport::new(name, baud_rate)
         .timeout(Duration::from_millis(10))
         .open() {
@@ -53,7 +57,7 @@ pub fn open_port(name: &String, baud_rate: u32) -> Result<Box<dyn SerialPort>, s
             Err(err) => {
                 println!("Available serial ports:\n");
                 print_ports();
-                return Err(err);
+                Err(err)
             }
         }
 }
@@ -200,7 +204,7 @@ fn stop_typing(port: &mut Box<dyn SerialPort>) {
 pub fn type_text(port: &mut Box<dyn SerialPort>, text: &str) {
     // Manually translate user defined escape codes:
     // https://stackoverflow.com/questions/72583983/interpreting-escape-characters-in-a-string-read-from-user-input
-    info!("Typing text");
+    debug!("Typing text");
     text.replace("\\r", "\r")
         .replace("\\n", "\r")
         .chars()
@@ -211,27 +215,28 @@ pub fn type_text(port: &mut Box<dyn SerialPort>, text: &str) {
 /// Get MEGA65 info
 #[allow(dead_code)]
 pub fn hypervisor_info(port: &mut Box<dyn SerialPort>) {
-    info!("Requesting serial monitor info");
-    port.write_all("h\n".as_bytes()).expect("Write failed!");
+    debug!("Requesting serial monitor info");
+    port.write_all("h\n".as_bytes()).unwrap();
     thread::sleep(DELAY_KEYPRESS);
-    let mut buffer = Vec::new();
-    buffer.resize(1024, 0);
-    let n = port
-        .read(&mut buffer)
-        .expect("Serial read error - likely non-unicode data");
-    println!("{}", n);
 
-    for i in buffer {
-        if i.is_ascii() {
-            print!("{}", i as char);
+    let mut buffer = Vec::new();
+    buffer.resize(65, 0);
+    port
+        .read_exact(&mut buffer)
+        .expect("serial read error");
+    let lines = buffer.split(|i|{*i == b'\n'});
+    for line in lines {
+        for i in line {
+            print!("{}", *i as char);
         }
     }
+    println!();
 }
 
 /// Loads memory from MEGA65 starting at given address
 pub fn load_memory(port: &mut Box<dyn SerialPort>, address: u32, length: usize) -> Vec<u8> {
     info!("Loading {} bytes from 0x{:x}", length, address);
-    stop_cpu(port);
+    stop_cpu(port).unwrap();
     // request memory dump (MEMORY, "M" command)
     port.write_all(format!("m{:x}\r", address).as_bytes())
         .unwrap();
@@ -253,22 +258,22 @@ pub fn load_memory(port: &mut Box<dyn SerialPort>, address: u32, length: usize) 
         let mut sixteen_bytes: Vec<u8> = Vec::from_hex(&buffer).expect("invalid hex");
         bytes.append(&mut sixteen_bytes);
         // trigger next memory dump and ignore header
-        port.write_all(format!("m\r").as_bytes()).unwrap();
+        port.write_all("m\r".to_string().as_bytes()).unwrap();
         thread::sleep(DELAY_KEYPRESS);
         buffer.resize(18, 0);
         port.read_exact(&mut buffer).expect("buffer load error");
     }
-    start_cpu(port);
+    start_cpu(port).unwrap();
     bytes.truncate(length);
     bytes
 }
 
 /// Copy chunks of data to MEGA65 at 200 kB/s at default baud rate
-pub fn write_memory(port: &mut Box<dyn SerialPort>, address: u16, bytes: &[u8]) {
-    info!("Loading {} bytes to address 0x{:x}", bytes.len(), address);
-    stop_cpu(port);
-    port.write_all(format!("l{:x} {:x}\r", address, address + bytes.len() as u16).as_bytes())
-        .unwrap();
-    port.write_all(bytes).unwrap();
-    start_cpu(port);
+pub fn write_memory(port: &mut Box<dyn SerialPort>, address: u16, bytes: &[u8]) -> std::io::Result<()> {
+    info!("Writing {} bytes to address 0x{:x}", bytes.len(), address);
+    stop_cpu(port)?;
+    port.write_all(format!("l{:x} {:x}\r", address, address + bytes.len() as u16).as_bytes()).unwrap();
+    port.write_all(bytes)?;
+    start_cpu(port)?;
+    Ok(())
 }
