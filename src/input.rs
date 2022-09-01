@@ -49,11 +49,11 @@ pub enum Commands {
     /// Peek into memory
     #[clap(arg_required_else_help = true)]
     Peek {
-        /// Address to peek into (e.g. 4096, 0x4000)
-        #[clap(long, short = 'a')]
+        /// Address to peek into, e.g. 4096 (dec) or 0x4000 (hex)
+        #[clap(long, short = '@')]
         address: String,
         /// Number of bytes to retrieve
-        #[clap(long, short = 'l', default_value_t = 1)]
+        #[clap(long = "num", short = 'n', default_value_t = 1)]
         length: usize,
         /// Output to binary file instead of hexdump
         #[clap(long, short = 'o')]
