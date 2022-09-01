@@ -248,7 +248,11 @@ pub fn hypervisor_info(port: &mut Box<dyn SerialPort>) {
 }
 
 /// Loads memory from MEGA65 starting at given address
-pub fn load_memory(port: &mut Box<dyn SerialPort>, address: u32, length: usize) -> Result<Vec<u8>, std::io::Error> {
+pub fn load_memory(
+    port: &mut Box<dyn SerialPort>,
+    address: u32,
+    length: usize,
+) -> Result<Vec<u8>, std::io::Error> {
     info!("Loading {} bytes from 0x{:x}", length, address);
     stop_cpu(port)?;
     // request memory dump (MEMORY, "M" command)
