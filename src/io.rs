@@ -13,7 +13,6 @@
 // limitations under the license.
 
 /// File I/O
-
 use log::info;
 use std::io::Read;
 
@@ -40,4 +39,15 @@ pub fn load_file_with_load_address(filename: &str) -> std::io::Result<(u16, Vec<
         load_address
     );
     Ok((load_address, bytes[2..].to_vec()))
+}
+
+/// Print bytes to screen
+pub fn hexdump(bytes: &Vec<u8>, bytes_per_line: usize) {
+    let to_hex = |i: u8| format!("0x{:02x}", i);
+    bytes.chunks(bytes_per_line).for_each(|line| {
+        for byte in line {
+            print!("{} ", to_hex(*byte));
+        }
+        println!();
+    });
 }

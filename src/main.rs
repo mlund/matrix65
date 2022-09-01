@@ -52,13 +52,7 @@ fn do_main() -> Result<(), Box<dyn Error>> {
 
         input::Commands::Peek { address, length } => {
             let bytes = serial::load_memory(&mut port, parse::<u32>(&address)?, length);
-            for (cnt, byte) in bytes.iter().enumerate() {
-                print!("0x{:02x} ", byte);
-                if (cnt + 1) % 8 == 0 {
-                    println!();
-                }
-            }
-            println!();
+            io::hexdump(&bytes, 8);
         }
     }
     Ok(())
