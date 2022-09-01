@@ -30,12 +30,15 @@ fn do_main() -> Result<(), Box<dyn Error>> {
             serial::hypervisor_info(&mut port);
         }
 
-        input::Commands::Reset {} => {
-            serial::reset(&mut port)?;
+        input::Commands::Reset { c64 } => {
+            match c64 {
+                true => serial::reset_to_c64(&mut port)?,
+                false => serial::reset(&mut port)?,
+            };
         }
 
         input::Commands::Type { text } => {
-            serial::type_text(&mut port, text.as_str());
+            serial::type_text(&mut port, text.as_str())?;
         }
 
         input::Commands::Prg { file, run } => {
@@ -46,7 +49,7 @@ fn do_main() -> Result<(), Box<dyn Error>> {
                 _ => todo!("arbitrary load address"),
             }
             if run {
-                serial::type_text(&mut port, "run\r");
+                serial::type_text(&mut port, "run\r")?;
             }
         }
 

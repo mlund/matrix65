@@ -40,7 +40,11 @@ pub enum Commands {
     },
 
     /// Reset MEGA65
-    Reset {},
+    Reset {
+        /// Reset into C64 mode
+        #[clap(long, action)]
+        c64: bool,
+    },
 
     /// Peek into memory
     #[clap(arg_required_else_help = true)]

@@ -69,6 +69,12 @@ pub fn reset(port: &mut Box<dyn SerialPort>) -> Result<(), std::io::Error> {
     port.write_all("!\n".as_bytes())
 }
 
+/// Reset into Commodore 64 mode via key presses
+pub fn reset_to_c64(port: &mut Box<dyn SerialPort>) -> Result<(), std::io::Error> {
+    info!("Sending GO64");
+    type_text(port, "go64\ry\r")
+}
+
 /// Translate and type a single letter on MEGA65
 fn type_key(port: &mut Box<dyn SerialPort>, mut key: char) {
     let mut c1: u8 = 0x7f;
@@ -196,13 +202,14 @@ fn type_key(port: &mut Box<dyn SerialPort>, mut key: char) {
 }
 
 /// Call this when done typing
-fn stop_typing(port: &mut Box<dyn SerialPort>) {
-    port.write_all("sffd3615 7f 7f 7f \n".as_bytes()).unwrap();
+fn stop_typing(port: &mut Box<dyn SerialPort>) -> Result<(), std::io::Error> {
+    port.write_all("sffd3615 7f 7f 7f \n".as_bytes())?;
     thread::sleep(DELAY_KEYPRESS);
+    Ok(())
 }
 
 /// Send array of key presses
-pub fn type_text(port: &mut Box<dyn SerialPort>, text: &str) {
+pub fn type_text(port: &mut Box<dyn SerialPort>, text: &str) -> Result<(), std::io::Error> {
     // Manually translate user defined escape codes:
     // https://stackoverflow.com/questions/72583983/interpreting-escape-characters-in-a-string-read-from-user-input
     debug!("Typing text");
@@ -210,7 +217,8 @@ pub fn type_text(port: &mut Box<dyn SerialPort>, text: &str) {
         .replace("\\n", "\r")
         .chars()
         .for_each(|key| type_key(port, key));
-    stop_typing(port);
+    stop_typing(port)?;
+    Ok(())
 }
 
 /// Get MEGA65 info

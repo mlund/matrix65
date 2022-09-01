@@ -25,9 +25,9 @@ pub fn load_file(filename: &str) -> std::io::Result<Vec<u8>> {
     Ok(bytes)
 }
 
-/// Load a prg file into a vector and detect load address
+/// Load a prg file into a byte vector and detect load address
 ///
-/// The two bytes form the 16-bit load address, little endian.
+/// The two first bytes form the 16-bit load address, little endian.
 /// Returns intended load address and raw bytes (excluding the first two bytes)
 pub fn load_file_with_load_address(filename: &str) -> std::io::Result<(u16, Vec<u8>)> {
     let bytes = load_file(filename)?;
@@ -42,7 +42,7 @@ pub fn load_file_with_load_address(filename: &str) -> std::io::Result<(u16, Vec<
 }
 
 /// Print bytes to screen
-pub fn hexdump(bytes: &Vec<u8>, bytes_per_line: usize) {
+pub fn hexdump(bytes: &[u8], bytes_per_line: usize) {
     let to_hex = |i: u8| format!("0x{:02x}", i);
     bytes.chunks(bytes_per_line).for_each(|line| {
         for byte in line {
