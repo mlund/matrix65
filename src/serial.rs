@@ -213,6 +213,7 @@ pub fn type_text(port: &mut Box<dyn SerialPort>, text: &str) -> Result<(), std::
     // Manually translate user defined escape codes:
     // https://stackoverflow.com/questions/72583983/interpreting-escape-characters-in-a-string-read-from-user-input
     debug!("Typing text");
+    std::thread::sleep(DELAY_KEYPRESS);
     text.replace("\\r", "\r")
         .replace("\\n", "\r")
         .chars()
@@ -283,8 +284,7 @@ pub fn write_memory(
 ) -> std::io::Result<()> {
     info!("Writing {} bytes to address 0x{:x}", bytes.len(), address);
     stop_cpu(port)?;
-    port.write_all(format!("l{:x} {:x}\r", address, address + bytes.len() as u16).as_bytes())
-        .unwrap();
+    port.write_all(format!("l{:x} {:x}\r", address, address + bytes.len() as u16).as_bytes())?;
     port.write_all(bytes)?;
     start_cpu(port)?;
     Ok(())
