@@ -37,6 +37,12 @@ fn start_cpu(port: &mut Box<dyn SerialPort>) -> std::io::Result<()> {
     Ok(())
 }
 
+/// Detect if in C65 mode
+pub fn mega65_mode(port: &mut Box<dyn SerialPort>) -> bool {
+    let byte = load_memory(port, 0xffd3030, 1).unwrap()[0];
+    byte == 0x64
+}
+
 /// Print available serial ports
 pub fn print_ports() {
     debug!("Detecting serial ports");
