@@ -20,6 +20,13 @@ mod input;
 mod io;
 mod serial;
 
+fn main() {
+    if let Err(err) = do_main() {
+        println!("Error: {}", &err);
+        std::process::exit(1);
+    }
+}
+
 fn do_main() -> Result<(), Box<dyn Error>> {
     pretty_env_logger::init();
     let args = input::Args::parse();
@@ -53,17 +60,17 @@ fn do_main() -> Result<(), Box<dyn Error>> {
             }
         }
 
-        input::Commands::Peek { address, length } => {
+        input::Commands::Peek {
+            address,
+            length,
+            outfile,
+        } => {
             let bytes = serial::load_memory(&mut port, parse::<u32>(&address)?, length);
-            io::hexdump(&bytes, 8);
+            match outfile {
+                Some(name) => io::save_binary(&name, &bytes)?,
+                None => io::hexdump(&bytes, 8),
+            };
         }
     }
     Ok(())
-}
-
-fn main() {
-    if let Err(err) = do_main() {
-        println!("Error: {}", &err);
-        std::process::exit(1);
-    }
 }

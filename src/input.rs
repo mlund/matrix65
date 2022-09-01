@@ -55,6 +55,9 @@ pub enum Commands {
         /// Number of bytes to retrieve
         #[clap(long, short = 'l', default_value_t = 1)]
         length: usize,
+        /// Output to binary file instead of hexdump
+        #[clap(long, short = 'o')]
+        outfile: Option<String>,
     },
 }
 
