@@ -40,7 +40,7 @@ pub fn load_file_with_load_address(filename: &str) -> std::io::Result<(u16, Vec<
     let load_address = purge_load_address(&mut bytes);
     info!(
         "Read {} bytes from {}; detected load address = 0x{:x}",
-        bytes.len(),
+        bytes.len() + 2,
         &filename,
         load_address
     );
