@@ -24,20 +24,27 @@ pub fn load_file(filename: &str) -> std::io::Result<Vec<u8>> {
     Ok(bytes)
 }
 
-/// Load a prg file into a byte vector and detect load address
-///
+/// Purge and return load address from vector of bytes
+/// 
 /// The two first bytes form the 16-bit load address, little endian.
-/// Returns intended load address and raw bytes (excluding the first two bytes)
-pub fn load_file_with_load_address(filename: &str) -> std::io::Result<(u16, Vec<u8>)> {
-    let bytes = load_file(filename)?;
+/// Returns found address and removes the first two bytes from the byte vector.
+fn purge_load_address(bytes : &mut Vec<u8>) -> u16 {
     let load_address = u16::from_le_bytes(bytes[0..2].try_into().unwrap());
+    *bytes = bytes[2..].to_vec();
+    load_address
+}
+
+/// Load a prg file into a byte vector and detect load address
+pub fn load_file_with_load_address(filename: &str) -> std::io::Result<(u16, Vec<u8>)> {
+    let mut bytes = load_file(filename)?;
+    let load_address = purge_load_address(&mut bytes);
     info!(
         "Read {} bytes from {}; detected load address = 0x{:x}",
         bytes.len(),
         &filename,
         load_address
     );
-    Ok((load_address, bytes[2..].to_vec()))
+    Ok((load_address, bytes.to_vec()))
 }
 
 /// Save bytes to binary file

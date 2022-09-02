@@ -280,7 +280,6 @@ pub fn load_memory(
         buffer.resize(18, 0);
         port.read_exact(&mut buffer)?;
     }
-    start_cpu(port)?;
     bytes.truncate(length);
     Ok(bytes)
 }
@@ -294,7 +293,11 @@ pub fn write_memory(
     info!("Writing {} bytes to address 0x{:x}", bytes.len(), address);
     stop_cpu(port)?;
     port.write_all(format!("l{:x} {:x}\r", address, address + bytes.len() as u16).as_bytes())?;
+    port.flush().unwrap();
+    thread::sleep(DELAY_KEYPRESS);
     port.write_all(bytes)?;
+    port.flush().unwrap();
+    thread::sleep(DELAY_KEYPRESS);
     start_cpu(port)?;
     Ok(())
 }
