@@ -24,6 +24,11 @@ impl Record {
     pub fn print(&self) {
         println!("{} {}", self.kind, self.title);
     }
+
+    // /// Create headers for use w. tui
+    // pub fn table_header(&self) -> Vec<String> {
+    //     vec![&self.title, &self.kind, &self.author]
+    // }
 }
 
 /// Get list of records from the filehost

@@ -20,6 +20,7 @@ mod filehost;
 mod input;
 mod io;
 mod serial;
+mod textui;
 
 #[tokio::main]
 async fn main() {
@@ -75,8 +76,9 @@ async fn do_main() -> Result<(), Box<dyn Error>> {
         }
 
         input::Commands::Filehost { dir } => {
-            let entries = filehost::get_file_list().await;
-            entries?.iter().for_each(|entry| entry.print());
+            textui::start_tui().unwrap();
+            //let entries = filehost::get_file_list().await;
+            //entries?.iter().for_each(|entry| entry.print());
         }
     }
     Ok(())
