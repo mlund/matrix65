@@ -16,18 +16,20 @@ use clap::Parser;
 use parse_int::parse;
 use std::error::Error;
 
+mod filehost;
 mod input;
 mod io;
 mod serial;
 
-fn main() {
-    if let Err(err) = do_main() {
+#[tokio::main]
+async fn main() {
+    if let Err(err) = do_main().await {
         println!("Error: {}", &err);
         std::process::exit(1);
     }
 }
 
-fn do_main() -> Result<(), Box<dyn Error>> {
+async fn do_main() -> Result<(), Box<dyn Error>> {
     pretty_env_logger::init();
     let args = input::Args::parse();
     let mut port = serial::open_port(&args.port, args.baud)?;
@@ -70,6 +72,11 @@ fn do_main() -> Result<(), Box<dyn Error>> {
                 Some(name) => io::save_binary(&name, &bytes)?,
                 None => io::hexdump(&bytes, 8),
             };
+        }
+
+        input::Commands::Filehost { dir } => {
+            let entries = filehost::get_file_list().await;
+            entries?.iter().for_each(|entry| entry.print());
         }
     }
     Ok(())

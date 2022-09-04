@@ -25,10 +25,10 @@ pub fn load_file(filename: &str) -> std::io::Result<Vec<u8>> {
 }
 
 /// Purge and return load address from vector of bytes
-/// 
+///
 /// The two first bytes form the 16-bit load address, little endian.
 /// Returns found address and removes the first two bytes from the byte vector.
-fn purge_load_address(bytes : &mut Vec<u8>) -> u16 {
+fn purge_load_address(bytes: &mut Vec<u8>) -> u16 {
     let load_address = u16::from_le_bytes(bytes[0..2].try_into().unwrap());
     *bytes = bytes[2..].to_vec();
     load_address

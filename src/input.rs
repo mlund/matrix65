@@ -59,6 +59,14 @@ pub enum Commands {
         #[clap(long, short = 'o')]
         outfile: Option<String>,
     },
+
+    /// Access FileHost
+    #[clap(arg_required_else_help = true)]
+    Filehost {
+        /// List files
+        #[clap(long, short = 'd', action)]
+        dir: bool,
+    },
 }
 
 #[derive(Parser)]
