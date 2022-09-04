@@ -25,10 +25,10 @@ impl Record {
         println!("{} {}", self.kind, self.title);
     }
 
-    // /// Create headers for use w. tui
-    // pub fn table_header(&self) -> Vec<String> {
-    //     vec![&self.title, &self.kind, &self.author]
-    // }
+    /// Create columns for tui list
+    pub fn columns(&self) -> Vec<&str> {
+        vec![&self.title, &self.kind, &self.author]
+    }
 }
 
 /// Get list of records from the filehost
