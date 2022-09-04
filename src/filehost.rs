@@ -1,7 +1,7 @@
 use serde::{Deserialize, Serialize};
 
 /// Record for an entry on the MEGA65 FileHost website
-#[derive(Serialize, Deserialize, Debug)]
+#[derive(Serialize, Deserialize, Debug, Default)]
 pub struct Record {
     pub fileid: String,
     pub title: String,

@@ -14,18 +14,16 @@ use tui::{
 
 use crate::filehost;
 
-struct App<'a> {
+struct App {
     state: TableState,
-    filehost_items: Vec<Vec<&'a str>>,
+    filehost_items: Vec<filehost::Record>,
 }
 
-impl<'a> App<'a> {
-    fn new() -> App<'a> {
+impl App {
+    fn new() -> App {
         App {
             state: TableState::default(),
-            filehost_items: vec![
-                vec!["Row11", "Row12", "Row13"],
-            ],
+            filehost_items: vec!{filehost::Record::default()},
         }
     }
     pub fn next(&mut self) {
@@ -116,13 +114,14 @@ fn ui<B: Backend>(f: &mut Frame<B>, app: &mut App) {
         .height(1)
         .bottom_margin(1);
     let rows = app.filehost_items.iter().map(|item| {
-        let height = item
+        let col_data = item.columns();
+        let height = col_data
             .iter()
             .map(|content| content.chars().filter(|c| *c == '\n').count())
             .max()
             .unwrap_or(0)
             + 1;
-        let cells = item.iter().map(|c| Cell::from(*c));
+        let cells = col_data.iter().map(|c| Cell::from(*c));
         Row::new(cells).height(height as u16).bottom_margin(1)
     });
     let t = Table::new(rows)
