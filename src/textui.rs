@@ -20,10 +20,10 @@ struct App {
 }
 
 impl App {
-    fn new() -> App {
+    fn new(filehost_itemsss : &[filehost::Record]) -> App {
         App {
             state: TableState::default(),
-            filehost_items: vec!{filehost::Record::default()},
+            filehost_items: filehost_itemsss.to_vec(),
         }
     }
     pub fn next(&mut self) {
@@ -55,7 +55,7 @@ impl App {
     }
 }
 
-pub fn start_tui() -> Result<(), Box<dyn Error>> {
+pub fn start_tui(filehost_items : &Vec<filehost::Record>) -> Result<(), Box<dyn Error>> {
     // setup terminal
     enable_raw_mode()?;
     let mut stdout = io::stdout();
@@ -64,7 +64,7 @@ pub fn start_tui() -> Result<(), Box<dyn Error>> {
     let mut terminal = Terminal::new(backend)?;
 
     // create app and run it
-    let app = App::new();
+    let app = App::new(filehost_items);
     let res = run_app(&mut terminal, app);
 
     // restore terminal
@@ -101,7 +101,7 @@ fn run_app<B: Backend>(terminal: &mut Terminal<B>, mut app: App) -> io::Result<(
 fn ui<B: Backend>(f: &mut Frame<B>, app: &mut App) {
     let rects = Layout::default()
         .constraints([Constraint::Percentage(100)].as_ref())
-        .margin(5)
+        .margin(2)
         .split(f.size());
 
     let selected_style = Style::default().add_modifier(Modifier::REVERSED);
@@ -122,7 +122,7 @@ fn ui<B: Backend>(f: &mut Frame<B>, app: &mut App) {
             .unwrap_or(0)
             + 1;
         let cells = col_data.iter().map(|c| Cell::from(*c));
-        Row::new(cells).height(height as u16).bottom_margin(1)
+        Row::new(cells).height(height as u16).bottom_margin(0)
     });
     let t = Table::new(rows)
         .header(header)

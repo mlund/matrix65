@@ -1,7 +1,7 @@
 use serde::{Deserialize, Serialize};
 
 /// Record for an entry on the MEGA65 FileHost website
-#[derive(Serialize, Deserialize, Debug, Default)]
+#[derive(Serialize, Deserialize, Debug, Default, Clone)]
 pub struct Record {
     pub fileid: String,
     pub title: String,
@@ -27,7 +27,7 @@ impl Record {
 
     /// Create columns for tui list
     pub fn columns(&self) -> Vec<&str> {
-        vec![&self.title, &self.kind, &self.author]
+        vec![&self.title, &self.kind, &self.rating]
     }
 }
 

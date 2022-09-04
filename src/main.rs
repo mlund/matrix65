@@ -76,8 +76,8 @@ async fn do_main() -> Result<(), Box<dyn Error>> {
         }
 
         input::Commands::Filehost { dir } => {
-            textui::start_tui().unwrap();
-            //let entries = filehost::get_file_list().await;
+            let entries = filehost::get_file_list().await?;
+            textui::start_tui(&entries).unwrap();
             //entries?.iter().for_each(|entry| entry.print());
         }
     }
