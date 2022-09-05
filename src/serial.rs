@@ -21,6 +21,7 @@ use std::time::Duration;
 /// Delay between sending key presses
 const DELAY_KEYPRESS: Duration = Duration::from_micros(20000);
 
+/// Stop the MEGA65 CPU
 fn stop_cpu(port: &mut Box<dyn SerialPort>) -> std::io::Result<()> {
     port.flush()?;
     port.write_all("t1\r".as_bytes())?;
@@ -29,6 +30,7 @@ fn stop_cpu(port: &mut Box<dyn SerialPort>) -> std::io::Result<()> {
     Ok(())
 }
 
+/// Start the MEGA65 CPU after being halted
 fn start_cpu(port: &mut Box<dyn SerialPort>) -> std::io::Result<()> {
     port.flush()?;
     port.write_all("t0\r".as_bytes())?;
