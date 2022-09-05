@@ -38,7 +38,7 @@ fn start_cpu(port: &mut Box<dyn SerialPort>) -> std::io::Result<()> {
 }
 
 /// Detect if in C65 mode
-pub fn mega65_mode(port: &mut Box<dyn SerialPort>) -> bool {
+pub fn _mega65_mode(port: &mut Box<dyn SerialPort>) -> bool {
     let byte = load_memory(port, 0xffd3030, 1).unwrap()[0];
     byte == 0x64
 }
@@ -75,10 +75,12 @@ pub fn reset(port: &mut Box<dyn SerialPort>) -> Result<(), std::io::Error> {
     port.write_all("!\n".as_bytes())
 }
 
-/// Reset into Commodore 64 mode via key presses
+/// Reset into Commodore 64 mode via key presses and wait 1 sec
 pub fn reset_to_c64(port: &mut Box<dyn SerialPort>) -> Result<(), std::io::Error> {
     info!("Sending GO64");
-    type_text(port, "go64\ry\r")
+    type_text(port, "go64\ry\r")?;
+    thread::sleep(Duration::from_secs(1));
+    Ok(())
 }
 
 /// Translate and type a single letter on MEGA65

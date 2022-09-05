@@ -12,10 +12,11 @@
 // see the license for the specific language governing permissions and
 // limitations under the license.
 
-/// File I/O
+use cbm::disk;
 use log::info;
 use std::fs::File;
-use std::io::prelude::*;
+use cbm::disk::file::FileOps;
+use std::io::{self, Read, Write};
 
 /// Load file into byte vector
 pub fn load_file(filename: &str) -> std::io::Result<Vec<u8>> {
@@ -32,6 +33,40 @@ fn purge_load_address(bytes: &mut Vec<u8>) -> u16 {
     let load_address = u16::from_le_bytes(bytes[0..2].try_into().unwrap());
     *bytes = bytes[2..].to_vec();
     load_address
+}
+
+/// User select PRG file from image
+/// 
+/// Looks for PRG files on the CBM disk image and
+/// presents a numbered list from which the user
+/// can select. Loads the file and returns the load
+/// address as well as the raw bytes.
+pub fn cbm_select_and_load(diskimage: &str) -> std::io::Result<(u16, Vec<u8>)> {
+    let disk = disk::open(diskimage, false)?;
+    let dir = disk.directory()?;
+    let prg_files = &mut dir
+        .iter()
+        .filter(|entry| entry.file_attributes.file_type == cbm::disk::directory::FileType::PRG);
+    for (counter, file) in prg_files.clone().enumerate() {
+        println!("[{}] {}.prg", counter, file.filename.to_string());
+    }
+    print!("Select: ");
+    io::stdout().flush()?;
+    let mut selection = String::new();
+    io::stdin()
+        .read_line(&mut selection)
+        .expect("Failed to read input");
+    let index = selection
+        .trim_end()
+        .parse::<usize>()
+        .expect("invalid index selection");
+    let entry = prg_files.nth(index).expect("invalid file");
+    let mut bytes = Vec::<u8>::new();
+    disk.open_file(&entry.filename)?
+        .reader()?
+        .read_to_end(&mut bytes)?;
+    let load_address = purge_load_address(&mut bytes);
+    Ok((load_address, bytes))
 }
 
 /// Load a prg file into a byte vector and detect load address

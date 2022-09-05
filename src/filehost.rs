@@ -21,7 +21,7 @@ pub struct Record {
 }
 
 impl Record {
-    pub fn print(&self) {
+    pub fn _print(&self) {
         println!("{} {}", self.kind, self.title);
     }
 

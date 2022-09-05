@@ -15,18 +15,20 @@ categories = ["command-line-utilities"]
 # See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
 
 [dependencies]
-serialport = "4.2.0"
-clap = { version = "3.2.18", features = ["derive"] }
+serialport = "4.2"
+clap = { version = "3.2", features = ["derive"] }
 log = "0.4"
-pretty_env_logger = "0.4.0"
+pretty_env_logger = "0.4"
 hex = "0.4.3"
-parse_int = "0.6.0"
+parse_int = "0.6"
 reqwest = { version = "0.11", features = ["json"] }
 tokio = { version = "1", features = ["full"] }
 serde = { version = "1.0", features = ["derive"] }
 serde_json = "1.0"
 tui = "0.19"
 crossterm = "0.25"
+cbm = "0.1"
+tempfile = "3.3"
 
 [profile.release]
 strip = true     # Automatically strip symbols from the binary.

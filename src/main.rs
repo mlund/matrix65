@@ -52,10 +52,20 @@ async fn do_main() -> Result<(), Box<dyn Error>> {
         }
 
         input::Commands::Prg { file, run } => {
-            let (load_address, bytes) = io::load_file_with_load_address(&file)?;
+            let (load_address, bytes) = match std::path::Path::new(&file).extension() {
+                None => io::load_file_with_load_address(&file)?,
+                Some(os_str) => match os_str.to_str() {
+                    Some("prg") => io::load_file_with_load_address(&file)?,
+                    Some("d81") => io::cbm_select_and_load(&file)?,
+                    _ => panic!("invalid file extension"),
+                },
+            };
             match load_address {
                 0x2001 => serial::write_memory(&mut port, load_address, &bytes)?,
-                0x0801 => todo!("c64 load address"),
+                0x0801 => {
+                    serial::reset_to_c64(&mut port)?;
+                    serial::write_memory(&mut port, load_address, &bytes)?;
+                },
                 _ => todo!("arbitrary load address"),
             }
             if run {

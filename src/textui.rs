@@ -20,7 +20,7 @@ struct App {
 }
 
 impl App {
-    fn new(filehost_itemsss : &[filehost::Record]) -> App {
+    fn new(filehost_itemsss: &[filehost::Record]) -> App {
         App {
             state: TableState::default(),
             filehost_items: filehost_itemsss.to_vec(),
@@ -55,7 +55,7 @@ impl App {
     }
 }
 
-pub fn start_tui(filehost_items : &Vec<filehost::Record>) -> Result<(), Box<dyn Error>> {
+pub fn start_tui(filehost_items: &[filehost::Record]) -> Result<(), Box<dyn Error>> {
     // setup terminal
     enable_raw_mode()?;
     let mut stdout = io::stdout();
@@ -126,7 +126,11 @@ fn ui<B: Backend>(f: &mut Frame<B>, app: &mut App) {
     });
     let t = Table::new(rows)
         .header(header)
-        .block(Block::default().borders(Borders::ALL).title("🌈 Filehost entries"))
+        .block(
+            Block::default()
+                .borders(Borders::ALL)
+                .title("🌈 Filehost entries"),
+        )
         .highlight_style(selected_style)
         .highlight_symbol(">> ")
         .widths(&[
