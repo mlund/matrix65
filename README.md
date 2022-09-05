@@ -20,7 +20,9 @@ PR's are welcome.
 - [x] Send sequence of key-presses
 - [x] Reset MEGA65
 - [x] Peek into memory; hexdump
-- [ ] Switch to C64 mode when 0x0801 load address is detected
+- [x] Load PRG files from CBM disk images (.d81)
+- [x] Switch to C64 mode when 0x0801 load address is detected
+- [x] MEGA65 Filehost access (experimental)
 - [ ] Load at arbitrary address and optionally start with `SYS`
 - [ ] Memory dumps in YAML format
 
