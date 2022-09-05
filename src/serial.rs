@@ -62,7 +62,7 @@ pub fn open_port(name: &str, baud_rate: u32) -> Result<Box<dyn SerialPort>, seri
     {
         Ok(port) => Ok(port),
         Err(err) => {
-            println!("Available serial ports:\n");
+            eprintln!("Unknown serial port - try one of these:");
             print_ports();
             Err(err)
         }
@@ -297,10 +297,10 @@ pub fn write_memory(
     info!("Writing {} bytes to address 0x{:x}", bytes.len(), address);
     stop_cpu(port)?;
     port.write_all(format!("l{:x} {:x}\r", address, address + bytes.len() as u16).as_bytes())?;
-    port.flush().unwrap();
+    port.flush()?;
     thread::sleep(DELAY_KEYPRESS);
     port.write_all(bytes)?;
-    port.flush().unwrap();
+    port.flush()?;
     thread::sleep(DELAY_KEYPRESS);
     start_cpu(port)?;
     Ok(())

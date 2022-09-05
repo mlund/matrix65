@@ -13,7 +13,6 @@
 // limitations under the license.
 
 /// Routines related to file loading and stdio
-
 use cbm::disk;
 use cbm::disk::file::FileOps;
 use log::info;
@@ -23,7 +22,7 @@ use std::io::{self, Read, Write};
 /// Load file into byte vector
 fn load_bytes(filename: &str) -> std::io::Result<Vec<u8>> {
     let mut bytes = Vec::new();
-    File::open(&filename).unwrap().read_to_end(&mut bytes)?;
+    File::open(&filename)?.read_to_end(&mut bytes)?;
     Ok(bytes)
 }
 
@@ -38,7 +37,8 @@ pub fn load_prg(file: String) -> std::io::Result<(u16, Vec<u8>)> {
             Some("prg") => load_with_load_address(&file),
             Some("d81") => cbm_select_and_load(&file),
             _ => {
-                let error = std::io::Error::new(std::io::ErrorKind::Other, "invalid file extension");
+                let error =
+                    std::io::Error::new(std::io::ErrorKind::Other, "invalid file extension");
                 Err(error)
             }
         },
@@ -50,7 +50,11 @@ pub fn load_prg(file: String) -> std::io::Result<(u16, Vec<u8>)> {
 /// The two first bytes form the 16-bit load address, little endian.
 /// Returns found address and removes the first two bytes from the byte vector.
 fn purge_load_address(bytes: &mut Vec<u8>) -> u16 {
-    let load_address = u16::from_le_bytes(bytes[0..2].try_into().unwrap());
+    let load_address = u16::from_le_bytes(
+        bytes[0..2]
+            .try_into()
+            .expect("error extracting load address"),
+    );
     *bytes = bytes[2..].to_vec();
     load_address
 }
@@ -73,9 +77,7 @@ fn cbm_select_and_load(diskimage: &str) -> std::io::Result<(u16, Vec<u8>)> {
     print!("Select: ");
     io::stdout().flush()?;
     let mut selection = String::new();
-    io::stdin()
-        .read_line(&mut selection)
-        .expect("Failed to read input");
+    io::stdin().read_line(&mut selection)?;
     let index = selection
         .trim_end()
         .parse::<usize>()

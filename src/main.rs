@@ -36,10 +36,6 @@ async fn do_main() -> Result<(), Box<dyn Error>> {
     let mut port = serial::open_port(&args.port, args.baud)?;
 
     match args.command {
-        input::Commands::Info {} => {
-            serial::hypervisor_info(&mut port);
-        }
-
         input::Commands::Reset { c64 } => {
             match c64 {
                 true => serial::reset_to_c64(&mut port)?,
@@ -81,7 +77,7 @@ async fn do_main() -> Result<(), Box<dyn Error>> {
 
         input::Commands::Filehost { dir: _ } => {
             let entries = filehost::get_file_list().await?;
-            textui::start_tui(&entries).unwrap();
+            textui::start_tui(&entries)?;
             //entries?.iter().for_each(|entry| entry.print());
         }
     }

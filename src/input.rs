@@ -17,7 +17,7 @@ use clap::{Parser, Subcommand};
 /// Matrix Mode Serial Communicator for MEGA65
 #[derive(Debug, Subcommand)]
 pub enum Commands {
-    /// Push and run program file
+    /// Push and run PRG program file
     #[clap(arg_required_else_help = true)]
     Prg {
         /// File to load or scan (.prg|.d81)
@@ -30,9 +30,6 @@ pub enum Commands {
         #[clap(long, short = 'r', action)]
         run: bool,
     },
-
-    /// Get MEGA65 info
-    Info {},
 
     /// Send key presses
     #[clap(arg_required_else_help = true)]
