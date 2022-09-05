@@ -13,16 +13,31 @@
 // limitations under the license.
 
 use cbm::disk;
+use cbm::disk::file::FileOps;
 use log::info;
 use std::fs::File;
-use cbm::disk::file::FileOps;
 use std::io::{self, Read, Write};
 
 /// Load file into byte vector
-pub fn load_file(filename: &str) -> std::io::Result<Vec<u8>> {
+fn load_bytes(filename: &str) -> std::io::Result<Vec<u8>> {
     let mut bytes = Vec::new();
     File::open(&filename).unwrap().read_to_end(&mut bytes)?;
     Ok(bytes)
+}
+
+/// Load PRG from prg and d81 files
+///
+/// If an archive (d81) is detected, the is presented with a selection
+/// of found PRG files. Returns intended load address and raw bytes.
+pub fn load_prg(file: String) -> std::io::Result<(u16, Vec<u8>)> {
+    match std::path::Path::new(&file).extension() {
+        None => load_with_load_address(&file),
+        Some(os_str) => match os_str.to_str() {
+            Some("prg") => load_with_load_address(&file),
+            Some("d81") => cbm_select_and_load(&file),
+            _ => panic!("invalid file extension"),
+        },
+    }
 }
 
 /// Purge and return load address from vector of bytes
@@ -36,12 +51,12 @@ fn purge_load_address(bytes: &mut Vec<u8>) -> u16 {
 }
 
 /// User select PRG file from image
-/// 
+///
 /// Looks for PRG files on the CBM disk image and
 /// presents a numbered list from which the user
 /// can select. Loads the file and returns the load
 /// address as well as the raw bytes.
-pub fn cbm_select_and_load(diskimage: &str) -> std::io::Result<(u16, Vec<u8>)> {
+fn cbm_select_and_load(diskimage: &str) -> std::io::Result<(u16, Vec<u8>)> {
     let disk = disk::open(diskimage, false)?;
     let dir = disk.directory()?;
     let prg_files = &mut dir
@@ -70,8 +85,8 @@ pub fn cbm_select_and_load(diskimage: &str) -> std::io::Result<(u16, Vec<u8>)> {
 }
 
 /// Load a prg file into a byte vector and detect load address
-pub fn load_file_with_load_address(filename: &str) -> std::io::Result<(u16, Vec<u8>)> {
-    let mut bytes = load_file(filename)?;
+fn load_with_load_address(filename: &str) -> std::io::Result<(u16, Vec<u8>)> {
+    let mut bytes = load_bytes(filename)?;
     let load_address = purge_load_address(&mut bytes);
     info!(
         "Read {} bytes from {}; detected load address = 0x{:x}",

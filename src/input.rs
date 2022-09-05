@@ -20,9 +20,12 @@ pub enum Commands {
     /// Push and run program file
     #[clap(arg_required_else_help = true)]
     Prg {
-        /// File to load (*.prg)
+        /// File to load or scan (.prg|.d81)
         #[clap(value_parser, short = 'f')]
         file: String,
+        /// Reset before loading
+        #[clap(long, action)]
+        reset: bool,
         /// Run after loading
         #[clap(long, short = 'r', action)]
         run: bool,

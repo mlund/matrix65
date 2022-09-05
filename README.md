@@ -10,19 +10,20 @@ albeit written entirely in **Rust**.
 As of writing, the list of functionality is inferior to `m65`, but
 expect more features over time.
 Should you be interested in exploring Rust programming,
-PR's are welcome.
+your involvement would be very welcome.
 
 - [x] World-class memory safety thanks to Rust
 - [x] Cross platform serial device detection
 - [x] Fancy CLI interface with subcommands
-- [x] Logging with e.g. `export RUST_LOG=info`
-- [x] Send and run `.prg` file
+- [x] Online Filehost access with TUI (experimental)
+- [x] Send and run PRG files
+- [x] Load PRG files from CBM disk images (.d81)
 - [x] Send sequence of key-presses
 - [x] Reset MEGA65
 - [x] Peek into memory; hexdump
-- [x] Load PRG files from CBM disk images (.d81)
 - [x] Switch to C64 mode when 0x0801 load address is detected
-- [x] MEGA65 Filehost access (experimental)
+- [x] Logging with e.g. `export RUST_LOG=info`
+- [ ] Transfer and mount disk images
 - [ ] Load at arbitrary address and optionally start with `SYS`
 - [ ] Memory dumps in YAML format
 

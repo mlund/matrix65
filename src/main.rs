@@ -51,23 +51,17 @@ async fn do_main() -> Result<(), Box<dyn Error>> {
             serial::type_text(&mut port, text.as_str())?;
         }
 
-        input::Commands::Prg { file, run } => {
-            let (load_address, bytes) = match std::path::Path::new(&file).extension() {
-                None => io::load_file_with_load_address(&file)?,
-                Some(os_str) => match os_str.to_str() {
-                    Some("prg") => io::load_file_with_load_address(&file)?,
-                    Some("d81") => io::cbm_select_and_load(&file)?,
-                    _ => panic!("invalid file extension"),
-                },
-            };
+        input::Commands::Prg { file, reset, run } => {
+            let (load_address, bytes) = io::load_prg(file)?;
+            if reset {
+                serial::reset(&mut port)?;
+            }
             match load_address {
-                0x2001 => serial::write_memory(&mut port, load_address, &bytes)?,
-                0x0801 => {
-                    serial::reset_to_c64(&mut port)?;
-                    serial::write_memory(&mut port, load_address, &bytes)?;
-                },
+                0x2001 => {}
+                0x0801 => serial::reset_to_c64(&mut port)?,
                 _ => todo!("arbitrary load address"),
             }
+            serial::write_memory(&mut port, load_address, &bytes)?;
             if run {
                 serial::type_text(&mut port, "run\r")?;
             }
@@ -85,7 +79,7 @@ async fn do_main() -> Result<(), Box<dyn Error>> {
             };
         }
 
-        input::Commands::Filehost { dir } => {
+        input::Commands::Filehost { dir: _ } => {
             let entries = filehost::get_file_list().await?;
             textui::start_tui(&entries).unwrap();
             //entries?.iter().for_each(|entry| entry.print());

@@ -72,7 +72,9 @@ pub fn open_port(name: &str, baud_rate: u32) -> Result<Box<dyn SerialPort>, seri
 /// Reset the MEGA65
 pub fn reset(port: &mut Box<dyn SerialPort>) -> Result<(), std::io::Error> {
     info!("Sending RESET signal");
-    port.write_all("!\n".as_bytes())
+    port.write_all("!\n".as_bytes())?;
+    thread::sleep(Duration::from_secs(4));
+    Ok(())
 }
 
 /// Reset into Commodore 64 mode via key presses and wait 1 sec
