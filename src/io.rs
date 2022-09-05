@@ -12,6 +12,8 @@
 // see the license for the specific language governing permissions and
 // limitations under the license.
 
+/// Routines related to file loading and stdio
+
 use cbm::disk;
 use cbm::disk::file::FileOps;
 use log::info;
@@ -35,7 +37,10 @@ pub fn load_prg(file: String) -> std::io::Result<(u16, Vec<u8>)> {
         Some(os_str) => match os_str.to_str() {
             Some("prg") => load_with_load_address(&file),
             Some("d81") => cbm_select_and_load(&file),
-            _ => panic!("invalid file extension"),
+            _ => {
+                let error = std::io::Error::new(std::io::ErrorKind::Other, "invalid file extension");
+                Err(error)
+            }
         },
     }
 }
@@ -50,12 +55,12 @@ fn purge_load_address(bytes: &mut Vec<u8>) -> u16 {
     load_address
 }
 
-/// User select PRG file from image
+/// User select PRG file from CBM image
 ///
 /// Looks for PRG files on the CBM disk image and
 /// presents a numbered list from which the user
 /// can select. Loads the file and returns the load
-/// address as well as the raw bytes.
+/// address together with raw bytes.
 fn cbm_select_and_load(diskimage: &str) -> std::io::Result<(u16, Vec<u8>)> {
     let disk = disk::open(diskimage, false)?;
     let dir = disk.directory()?;
