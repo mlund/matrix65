@@ -49,7 +49,7 @@ pub enum Commands {
     /// Peek into memory
     #[clap(arg_required_else_help = true)]
     Peek {
-        /// Address to peek into, e.g. 4096 (dec) or 0x4000 (hex)
+        /// Address to peek into, e.g. 4096 (dec) or 0x1000 (hex)
         #[clap(long, short = '@')]
         address: String,
         /// Number of bytes to retrieve
@@ -61,11 +61,8 @@ pub enum Commands {
     },
 
     /// Access FileHost
-    #[clap(arg_required_else_help = true)]
+    #[clap()]
     Filehost {
-        /// List files
-        #[clap(long, short = 'd', action)]
-        dir: bool,
     },
 }
 

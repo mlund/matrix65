@@ -64,7 +64,7 @@ pub fn open_port(name: &str, baud_rate: u32) -> Result<Box<dyn SerialPort>, seri
     {
         Ok(port) => Ok(port),
         Err(err) => {
-            eprintln!("Unknown serial port - try one of these:");
+            eprintln!("Invalid serial port, try one of these?\n");
             print_ports();
             Err(err)
         }
