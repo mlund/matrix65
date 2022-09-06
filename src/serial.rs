@@ -40,7 +40,7 @@ fn start_cpu(port: &mut Box<dyn SerialPort>) -> std::io::Result<()> {
 }
 
 /// Detect if in C65 mode
-pub fn _mega65_mode(port: &mut Box<dyn SerialPort>) -> bool {
+pub fn is_mega65_mode(port: &mut Box<dyn SerialPort>) -> bool {
     let byte = load_memory(port, 0xffd3030, 1).unwrap()[0];
     byte == 0x64
 }
@@ -79,12 +79,22 @@ pub fn reset(port: &mut Box<dyn SerialPort>) -> Result<(), std::io::Error> {
     Ok(())
 }
 
-/// Reset into Commodore 64 mode via key presses and wait 1 sec
-pub fn reset_to_c64(port: &mut Box<dyn SerialPort>) -> Result<(), std::io::Error> {
+/// If not already there, go to C64 mode via key presses
+pub fn go64(port: &mut Box<dyn SerialPort>) -> Result<(), std::io::Error> {
     info!("Sending GO64");
-    type_text(port, "go64\ry\r")?;
-    thread::sleep(Duration::from_secs(1));
+    if is_mega65_mode(port) {
+        type_text(port, "go64\ry\r")?;
+        thread::sleep(Duration::from_secs(1));
+    }
     Ok(())
+}
+
+/// If not already there, go to C65 mode via a reset
+pub fn go65(port: &mut Box<dyn SerialPort>) -> Result<(), std::io::Error> {
+    match is_mega65_mode(port) {
+        true => Ok(()),
+        false => reset(port),
+    }
 }
 
 /// Translate and type a single letter on MEGA65
@@ -293,9 +303,8 @@ pub fn load_memory(
 }
 
 /// Try to empty the reader by reading one byte until nothing more can be read
-/// 
-/// There might be more elegant ways to do this, although read_to_end doesn't
-/// seem to work.
+///
+/// There must be more elegant ways to do this...
 fn empty_monitor(port: &mut Box<dyn SerialPort>) -> std::io::Result<()> {
     port.write_all(&[0x15, b'#', b'\r'])?;
     port.flush()?;

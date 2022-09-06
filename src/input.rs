@@ -62,8 +62,7 @@ pub enum Commands {
 
     /// Access FileHost
     #[clap()]
-    Filehost {
-    },
+    Filehost {},
 }
 
 #[derive(Parser)]

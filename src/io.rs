@@ -30,7 +30,7 @@ fn load_bytes(filename: &str) -> std::io::Result<Vec<u8>> {
 ///
 /// If an archive (d81) is detected, the is presented with a selection
 /// of found PRG files. Returns intended load address and raw bytes.
-pub fn load_prg(file: String) -> std::io::Result<(u16, Vec<u8>)> {
+pub fn load_prg(file: &str) -> std::io::Result<(u16, Vec<u8>)> {
     match std::path::Path::new(&file).extension() {
         None => load_with_load_address(&file),
         Some(os_str) => match os_str.to_str() {

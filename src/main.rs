@@ -25,7 +25,7 @@ mod textui;
 #[tokio::main]
 async fn main() {
     if let Err(err) = do_main().await {
-        println!("Error: {}", &err);
+        eprintln!("Error: {}", &err);
         std::process::exit(1);
     }
 }
@@ -37,10 +37,10 @@ async fn do_main() -> Result<(), Box<dyn Error>> {
 
     match args.command {
         input::Commands::Reset { c64 } => {
-            match c64 {
-                true => serial::reset_to_c64(&mut port)?,
-                false => serial::reset(&mut port)?,
-            };
+            serial::reset(&mut port)?;
+            if c64 {
+                serial::go64(&mut port)?
+            }
         }
 
         input::Commands::Type { text } => {
@@ -48,13 +48,13 @@ async fn do_main() -> Result<(), Box<dyn Error>> {
         }
 
         input::Commands::Prg { file, reset, run } => {
-            let (load_address, bytes) = io::load_prg(file)?;
+            let (load_address, bytes) = io::load_prg(&file)?;
             if reset {
                 serial::reset(&mut port)?;
             }
             match load_address {
-                0x2001 => {}
-                0x0801 => serial::reset_to_c64(&mut port)?,
+                0x2001 => serial::go65(&mut port)?,
+                0x0801 => serial::go64(&mut port)?,
                 _ => todo!("arbitrary load address"),
             }
             serial::write_memory(&mut port, load_address, &bytes)?;
@@ -75,7 +75,7 @@ async fn do_main() -> Result<(), Box<dyn Error>> {
             };
         }
 
-        input::Commands::Filehost { } => {
+        input::Commands::Filehost {} => {
             let entries = filehost::get_file_list().await?;
             textui::start_tui(&entries)?;
             //entries?.iter().for_each(|entry| entry.print());
