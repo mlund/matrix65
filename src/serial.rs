@@ -260,6 +260,7 @@ pub fn load_memory(
     length: usize,
 ) -> Result<Vec<u8>, std::io::Error> {
     info!("Loading {} bytes from 0x{:x}", length, address);
+    empty_monitor(port)?;
     stop_cpu(port)?;
     // request memory dump (MEMORY, "M" command)
     port.write_all(format!("m{:07x}\r", address).as_bytes())?;
@@ -287,7 +288,30 @@ pub fn load_memory(
         port.read_exact(&mut buffer)?;
     }
     bytes.truncate(length);
+    start_cpu(port)?;
     Ok(bytes)
+}
+
+/// Try to empty the reader by reading one byte until nothing more can be read
+/// 
+/// There might be more elegant ways to do this, although read_to_end doesn't
+/// seem to work.
+fn empty_monitor(port: &mut Box<dyn SerialPort>) -> std::io::Result<()> {
+    port.flush()?;
+    let cmd = [0x15, b'#', 0x0d];
+    port.write_all(&cmd)?;
+    thread::sleep(Duration::from_millis(20));
+    let mut byte = [0u8];
+    loop {
+        match port.read_exact(&mut byte) {
+            Err(_) => break,
+            Ok(()) => {
+                thread::sleep(Duration::from_millis(20));
+            }
+        }
+    }
+    port.flush()?;
+    Ok(())
 }
 
 /// Copy chunks of data to MEGA65 at 200 kB/s at default baud rate
