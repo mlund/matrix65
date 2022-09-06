@@ -17,7 +17,7 @@ use clap::{Parser, Subcommand};
 /// Matrix Mode Serial Communicator for MEGA65
 #[derive(Debug, Subcommand)]
 pub enum Commands {
-    /// Push and run PRG program file
+    /// Push and run PRG from file or archive
     #[clap(arg_required_else_help = true)]
     Prg {
         /// File to load or scan (.prg|.d81)
@@ -34,8 +34,8 @@ pub enum Commands {
     /// Send key presses
     #[clap(arg_required_else_help = true)]
     Type {
-        /// Text to type - use "\r" for return
-        #[clap(long, short = 't')]
+        /// Text to type - use \r for return
+        #[clap(value_parser)]
         text: String,
     },
 
@@ -71,7 +71,7 @@ pub struct Args {
     #[clap(subcommand)]
     pub command: Commands,
 
-    /// Serial device name. Use --port=? to see list of ports.
+    /// Serial device name, e.g. /dev/cu.usbserial-AQ027F6E
     #[clap(short = 'p', long)]
     pub port: String,
 
