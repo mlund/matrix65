@@ -297,20 +297,16 @@ pub fn load_memory(
 /// There might be more elegant ways to do this, although read_to_end doesn't
 /// seem to work.
 fn empty_monitor(port: &mut Box<dyn SerialPort>) -> std::io::Result<()> {
+    port.write_all(&[0x15, b'#', b'\r'])?;
     port.flush()?;
-    let cmd = [0x15, b'#', 0x0d];
-    port.write_all(&cmd)?;
-    thread::sleep(Duration::from_millis(20));
     let mut byte = [0u8];
     loop {
+        thread::sleep(Duration::from_millis(20));
         match port.read_exact(&mut byte) {
+            Ok(()) => continue,
             Err(_) => break,
-            Ok(()) => {
-                thread::sleep(Duration::from_millis(20));
-            }
         }
     }
-    port.flush()?;
     Ok(())
 }
 
