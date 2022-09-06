@@ -17,7 +17,7 @@ use clap::{Parser, Subcommand};
 /// Matrix Mode Serial Communicator for MEGA65
 #[derive(Debug, Subcommand)]
 pub enum Commands {
-    /// Push and run PRG from file or archive
+    /// Transfer and run PRG from file or archive
     #[clap(arg_required_else_help = true)]
     Prg {
         /// File to load or scan (.prg|.d81)
@@ -75,7 +75,7 @@ pub struct Args {
     #[clap(short = 'p', long)]
     pub port: String,
 
-    /// Baud rate for serial communication
+    /// Serial communication speed in bits/s
     #[clap(short = 'b', long, default_value_t = 2000000)]
     pub baud: u32,
 }

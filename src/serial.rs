@@ -23,7 +23,6 @@ const DELAY_KEYPRESS: Duration = Duration::from_micros(20000);
 
 /// Stop the MEGA65 CPU
 fn stop_cpu(port: &mut Box<dyn SerialPort>) -> std::io::Result<()> {
-    port.flush()?;
     port.write_all("t1\r".as_bytes())?;
     port.flush()?;
     thread::sleep(DELAY_KEYPRESS);
@@ -32,7 +31,6 @@ fn stop_cpu(port: &mut Box<dyn SerialPort>) -> std::io::Result<()> {
 
 /// Start the MEGA65 CPU after being halted
 fn start_cpu(port: &mut Box<dyn SerialPort>) -> std::io::Result<()> {
-    port.flush()?;
     port.write_all("t0\r".as_bytes())?;
     port.flush()?;
     thread::sleep(DELAY_KEYPRESS);
