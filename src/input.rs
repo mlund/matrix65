@@ -21,7 +21,7 @@ pub enum Commands {
     #[clap(arg_required_else_help = true)]
     Prg {
         /// File to load or scan (.prg|.d81)
-        #[clap(value_parser, short = 'f')]
+        #[clap(value_parser)]
         file: String,
         /// Reset before loading
         #[clap(long, action)]
