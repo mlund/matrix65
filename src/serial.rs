@@ -235,6 +235,7 @@ pub fn type_text(port: &mut Box<dyn SerialPort>, text: &str) -> std::io::Result<
     // Manually translate user defined escape codes:
     // https://stackoverflow.com/questions/72583983/interpreting-escape-characters-in-a-string-read-from-user-input
     debug!("Typing text");
+    thread::sleep(DELAY_KEYPRESS);
     text.replace("\\r", "\r")
         .replace("\\n", "\r")
         .chars()

@@ -26,16 +26,16 @@ fn load_bytes(filename: &str) -> std::io::Result<Vec<u8>> {
     Ok(bytes)
 }
 
-/// Load PRG from prg and d81 files
+/// Load PRG from prg and CBM disk files
 ///
-/// If an archive (d81) is detected, the is presented with a selection
+/// If an archive (.d64|.d81) is detected, the user is presented with a selection
 /// of found PRG files. Returns intended load address and raw bytes.
 pub fn load_prg(file: &str) -> std::io::Result<(u16, Vec<u8>)> {
     match std::path::Path::new(&file).extension() {
         None => load_with_load_address(&file),
-        Some(os_str) => match os_str.to_str() {
+        Some(os_str) => match os_str.to_ascii_lowercase().to_str() {
             Some("prg") => load_with_load_address(&file),
-            Some("d81") => cbm_select_and_load(&file),
+            Some("d81") | Some("d64") => cbm_select_and_load(&file),
             _ => {
                 let error =
                     std::io::Error::new(std::io::ErrorKind::Other, "invalid file extension");
