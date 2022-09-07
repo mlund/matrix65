@@ -68,7 +68,7 @@ async fn do_main() -> Result<(), Box<dyn Error>> {
             length,
             outfile,
         } => {
-            let bytes = serial::load_memory(&mut port, parse::<u32>(&address)?, length)?;
+            let bytes = serial::read_memory(&mut port, parse::<u32>(&address)?, length)?;
             match outfile {
                 Some(name) => io::save_binary(&name, &bytes)?,
                 None => io::hexdump(&bytes, 8),

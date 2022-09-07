@@ -18,14 +18,16 @@ use serialport::SerialPort;
 use std::thread;
 use std::time::Duration;
 
+/// Delay after writing to serial port
+const DELAY_WRITE: Duration = Duration::from_millis(20);
 /// Delay between sending key presses
-const DELAY_KEYPRESS: Duration = Duration::from_micros(20000);
+const DELAY_KEYPRESS: Duration = DELAY_WRITE;
 
 /// Stop the MEGA65 CPU
 fn stop_cpu(port: &mut Box<dyn SerialPort>) -> std::io::Result<()> {
     port.write_all("t1\r".as_bytes())?;
     port.flush()?;
-    thread::sleep(DELAY_KEYPRESS);
+    thread::sleep(DELAY_WRITE);
     Ok(())
 }
 
@@ -33,13 +35,13 @@ fn stop_cpu(port: &mut Box<dyn SerialPort>) -> std::io::Result<()> {
 fn start_cpu(port: &mut Box<dyn SerialPort>) -> std::io::Result<()> {
     port.write_all("t0\r".as_bytes())?;
     port.flush()?;
-    thread::sleep(DELAY_KEYPRESS);
+    thread::sleep(DELAY_WRITE);
     Ok(())
 }
 
 /// Detect if in C65 mode
-pub fn is_mega65_mode(port: &mut Box<dyn SerialPort>) -> bool {
-    let byte = load_memory(port, 0xffd3030, 1).unwrap()[0];
+pub fn is_c65_mode(port: &mut Box<dyn SerialPort>) -> bool {
+    let byte = read_memory(port, 0xffd3030, 1).unwrap()[0];
     byte == 0x64
 }
 
@@ -80,7 +82,7 @@ pub fn reset(port: &mut Box<dyn SerialPort>) -> Result<(), std::io::Error> {
 /// If not already there, go to C64 mode via key presses
 pub fn go64(port: &mut Box<dyn SerialPort>) -> Result<(), std::io::Error> {
     info!("Sending GO64");
-    if is_mega65_mode(port) {
+    if is_c65_mode(port) {
         type_text(port, "go64\ry\r")?;
         thread::sleep(Duration::from_secs(1));
     }
@@ -89,14 +91,14 @@ pub fn go64(port: &mut Box<dyn SerialPort>) -> Result<(), std::io::Error> {
 
 /// If not already there, go to C65 mode via a reset
 pub fn go65(port: &mut Box<dyn SerialPort>) -> Result<(), std::io::Error> {
-    match is_mega65_mode(port) {
+    match is_c65_mode(port) {
         true => Ok(()),
         false => reset(port),
     }
 }
 
 /// Translate and type a single letter on MEGA65
-fn type_key(port: &mut Box<dyn SerialPort>, mut key: char) {
+fn type_key(port: &mut Box<dyn SerialPort>, mut key: char) -> std::io::Result<()> {
     let mut c1: u8 = 0x7f;
     let mut c2 = match key {
         '!' => {
@@ -216,42 +218,41 @@ fn type_key(port: &mut Box<dyn SerialPort>, mut key: char) {
         _ => c1 = 0x7f,
     }
 
-    port.write_all(format!("sffd3615 {:02x} {:02x}\n", c1, c2).as_bytes())
-        .unwrap();
+    port.write_all(format!("sffd3615 {:02x} {:02x}\n", c1, c2).as_bytes())?;
     thread::sleep(DELAY_KEYPRESS);
+    Ok(())
 }
 
 /// Call this when done typing
-fn stop_typing(port: &mut Box<dyn SerialPort>) -> Result<(), std::io::Error> {
+fn stop_typing(port: &mut Box<dyn SerialPort>) -> std::io::Result<()> {
     port.write_all("sffd3615 7f 7f 7f \n".as_bytes())?;
-    thread::sleep(DELAY_KEYPRESS);
+    thread::sleep(DELAY_WRITE);
     Ok(())
 }
 
 /// Send array of key presses
-pub fn type_text(port: &mut Box<dyn SerialPort>, text: &str) -> Result<(), std::io::Error> {
+pub fn type_text(port: &mut Box<dyn SerialPort>, text: &str) -> std::io::Result<()> {
     // Manually translate user defined escape codes:
     // https://stackoverflow.com/questions/72583983/interpreting-escape-characters-in-a-string-read-from-user-input
     debug!("Typing text");
-    std::thread::sleep(DELAY_KEYPRESS);
     text.replace("\\r", "\r")
         .replace("\\n", "\r")
         .chars()
-        .for_each(|key| type_key(port, key));
+        .for_each(|key| type_key(port, key).unwrap());
     stop_typing(port)?;
     Ok(())
 }
 
-/// Get MEGA65 info
+/// Get MEGA65 info (@todo under construction)
 #[allow(dead_code)]
-pub fn hypervisor_info(port: &mut Box<dyn SerialPort>) {
+pub fn mega65_info(port: &mut Box<dyn SerialPort>) -> std::io::Result<()> {
     debug!("Requesting serial monitor info");
-    port.write_all("h\n".as_bytes()).unwrap();
-    thread::sleep(DELAY_KEYPRESS);
+    port.write_all("h\n".as_bytes())?;
+    thread::sleep(DELAY_WRITE);
 
     let mut buffer = Vec::new();
     buffer.resize(65, 0);
-    port.read_exact(&mut buffer).expect("serial read error");
+    port.read_exact(&mut buffer)?;
     let lines = buffer.split(|i| *i == b'\n');
     for line in lines {
         for i in line {
@@ -259,10 +260,11 @@ pub fn hypervisor_info(port: &mut Box<dyn SerialPort>) {
         }
     }
     println!();
+    Ok(())
 }
 
-/// Loads memory from MEGA65 starting at given address
-pub fn load_memory(
+/// Load memory from MEGA65 starting at given address
+pub fn read_memory(
     port: &mut Box<dyn SerialPort>,
     address: u32,
     length: usize,
@@ -272,7 +274,7 @@ pub fn load_memory(
     stop_cpu(port)?;
     // request memory dump (MEMORY, "M" command)
     port.write_all(format!("m{:07x}\r", address).as_bytes())?;
-    thread::sleep(DELAY_KEYPRESS);
+    thread::sleep(DELAY_WRITE);
 
     let mut buffer = Vec::new();
     let mut bytes = Vec::new();
@@ -290,8 +292,8 @@ pub fn load_memory(
         let mut sixteen_bytes: Vec<u8> = Vec::from_hex(&buffer).expect("invalid hex");
         bytes.append(&mut sixteen_bytes);
         // trigger next memory dump and ignore header
-        port.write_all("m\r".to_string().as_bytes())?;
-        thread::sleep(DELAY_KEYPRESS);
+        port.write_all("m\r".as_bytes())?;
+        thread::sleep(DELAY_WRITE);
         buffer.resize(18, 0);
         port.read_exact(&mut buffer)?;
     }
@@ -305,10 +307,9 @@ pub fn load_memory(
 /// There must be more elegant ways to do this...
 fn flush_monitor(port: &mut Box<dyn SerialPort>) -> std::io::Result<()> {
     port.write_all(&[0x15, b'#', b'\r'])?;
-    port.flush()?;
     let mut byte = [0u8];
     loop {
-        thread::sleep(Duration::from_millis(20));
+        thread::sleep(DELAY_WRITE);
         match port.read_exact(&mut byte) {
             Ok(()) => continue,
             Err(_) => break,
@@ -317,7 +318,7 @@ fn flush_monitor(port: &mut Box<dyn SerialPort>) -> std::io::Result<()> {
     Ok(())
 }
 
-/// Copy chunks of data to MEGA65 at 200 kB/s at default baud rate
+/// Write bytes to MEGA65 at 200 kB/s at default baud rate
 pub fn write_memory(
     port: &mut Box<dyn SerialPort>,
     address: u16,
@@ -326,11 +327,9 @@ pub fn write_memory(
     info!("Writing {} bytes to address 0x{:x}", bytes.len(), address);
     stop_cpu(port)?;
     port.write_all(format!("l{:x} {:x}\r", address, address + bytes.len() as u16).as_bytes())?;
-    port.flush()?;
-    thread::sleep(DELAY_KEYPRESS);
+    thread::sleep(DELAY_WRITE);
     port.write_all(bytes)?;
-    port.flush()?;
-    thread::sleep(DELAY_KEYPRESS);
+    thread::sleep(DELAY_WRITE);
     start_cpu(port)?;
     Ok(())
 }
