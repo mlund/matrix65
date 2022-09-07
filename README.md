@@ -17,11 +17,11 @@ your involvement would be very welcome.
 - [x] Fancy CLI interface with subcommands
 - [x] Online Filehost access with TUI (experimental)
 - [x] Send and run PRG files
-- [x] Load PRG files from CBM disk images (.d81)
+  - [x] Go C64/C65 dependent on detected load address
+  - [x] Extract PRG from CBM disk images (.d81)
 - [x] Send sequence of key-presses
 - [x] Reset MEGA65
-- [x] Peek into memory; hexdump
-- [x] Switch to C64 mode when 0x0801 load address is detected
+- [x] Peek into memory; hexdump, binary file dump
 - [x] Logging with e.g. `export RUST_LOG=info`
 - [ ] Transfer and mount disk images
 - [ ] Load at arbitrary address and optionally start with `SYS`

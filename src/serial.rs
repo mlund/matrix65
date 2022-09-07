@@ -268,7 +268,7 @@ pub fn load_memory(
     length: usize,
 ) -> Result<Vec<u8>, std::io::Error> {
     info!("Loading {} bytes from 0x{:x}", length, address);
-    empty_monitor(port)?;
+    flush_monitor(port)?;
     stop_cpu(port)?;
     // request memory dump (MEMORY, "M" command)
     port.write_all(format!("m{:07x}\r", address).as_bytes())?;
@@ -300,10 +300,10 @@ pub fn load_memory(
     Ok(bytes)
 }
 
-/// Try to empty the reader by reading one byte until nothing more can be read
+/// Try to empty the monitor by reading one byte until nothing more can be read
 ///
 /// There must be more elegant ways to do this...
-fn empty_monitor(port: &mut Box<dyn SerialPort>) -> std::io::Result<()> {
+fn flush_monitor(port: &mut Box<dyn SerialPort>) -> std::io::Result<()> {
     port.write_all(&[0x15, b'#', b'\r'])?;
     port.flush()?;
     let mut byte = [0u8];
