@@ -19,10 +19,15 @@ use log::info;
 use std::fs::File;
 use std::io::{self, Read, Write};
 
-/// Load file into byte vector
+/// Load file or url into byte vector
 fn load_bytes(filename: &str) -> std::io::Result<Vec<u8>> {
     let mut bytes = Vec::new();
-    File::open(&filename)?.read_to_end(&mut bytes)?;
+    if filename.starts_with("http") {
+        bytes = reqwest::blocking::get(filename).unwrap().bytes().unwrap().to_vec();
+    } else {
+        File::open(&filename)?.read_to_end(&mut bytes)?;
+    }
+    assert!(bytes.len() < 0xffff);
     Ok(bytes)
 }
 
@@ -91,7 +96,7 @@ fn cbm_select_and_load(diskimage: &str) -> std::io::Result<(u16, Vec<u8>)> {
     Ok((load_address, bytes))
 }
 
-/// Load a prg file into a byte vector and detect load address
+/// Load a prg file or url into a byte vector and detect load address
 fn load_with_load_address(filename: &str) -> std::io::Result<(u16, Vec<u8>)> {
     let mut bytes = load_bytes(filename)?;
     let load_address = purge_load_address(&mut bytes);

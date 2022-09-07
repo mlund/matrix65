@@ -32,8 +32,8 @@ impl Record {
 }
 
 /// Get list of records from the filehost
-pub async fn get_file_list() -> Result<Vec<Record>, Box<dyn std::error::Error>> {
+pub fn get_file_list() -> Result<Vec<Record>, Box<dyn std::error::Error>> {
     let url = "https://files.mega65.org/php/readfilespublic.php";
-    let body = reqwest::get(url).await?.text().await?;
+    let body = reqwest::blocking::get(url)?.text()?;
     Ok(serde_json::from_str(&body)?)
 }

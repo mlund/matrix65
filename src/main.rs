@@ -22,15 +22,14 @@ mod io;
 mod serial;
 mod textui;
 
-#[tokio::main]
-async fn main() {
-    if let Err(err) = do_main().await {
+fn main() {
+    if let Err(err) = do_main() {
         eprintln!("Error: {}", &err);
         std::process::exit(1);
     }
 }
 
-async fn do_main() -> Result<(), Box<dyn Error>> {
+fn do_main() -> Result<(), Box<dyn Error>> {
     pretty_env_logger::init();
     let args = input::Args::parse();
     let mut port = serial::open_port(&args.port, args.baud)?;
@@ -76,7 +75,7 @@ async fn do_main() -> Result<(), Box<dyn Error>> {
         }
 
         input::Commands::Filehost {} => {
-            let entries = filehost::get_file_list().await?;
+            let entries = filehost::get_file_list()?;
             textui::start_tui(&entries)?;
             //entries?.iter().for_each(|entry| entry.print());
         }
