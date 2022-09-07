@@ -18,12 +18,17 @@ use cbm::disk::file::FileOps;
 use log::info;
 use std::fs::File;
 use std::io::{self, Read, Write};
+use tempfile::Builder;
 
 /// Load file or url into byte vector
 fn load_bytes(filename: &str) -> std::io::Result<Vec<u8>> {
     let mut bytes = Vec::new();
     if filename.starts_with("http") {
-        bytes = reqwest::blocking::get(filename).unwrap().bytes().unwrap().to_vec();
+        bytes = reqwest::blocking::get(filename)
+            .unwrap()
+            .bytes()
+            .unwrap()
+            .to_vec();
     } else {
         File::open(&filename)?.read_to_end(&mut bytes)?;
     }
@@ -64,14 +69,31 @@ fn purge_load_address(bytes: &mut Vec<u8>) -> u16 {
     load_address
 }
 
-/// User select PRG file from CBM image
+/// Open a CBM diskimage from file or url
+fn cbm_open(diskimage: &str) -> std::io::Result<Box<dyn cbm::disk::Disk>> {
+    if diskimage.starts_with("http") {
+        let tmp_dir = Builder::new().tempdir()?;
+        let path = tmp_dir.path().join("temp-image");
+        let filename = path.to_str().unwrap();
+        let bytes = reqwest::blocking::get(diskimage)
+            .unwrap()
+            .bytes()
+            .unwrap()
+            .to_vec();
+        save_binary(filename, &bytes);
+        return disk::open(filename, false);
+    }
+    disk::open(diskimage, false)
+}
+
+/// User select PRG file from CBM image file or url
 ///
 /// Looks for PRG files on the CBM disk image and
 /// presents a numbered list from which the user
 /// can select. Loads the file and returns the load
 /// address together with raw bytes.
 fn cbm_select_and_load(diskimage: &str) -> std::io::Result<(u16, Vec<u8>)> {
-    let disk = disk::open(diskimage, false)?;
+    let disk = cbm_open(diskimage)?;
     let dir = disk.directory()?;
     let prg_files = &mut dir
         .iter()

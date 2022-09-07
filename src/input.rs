@@ -20,7 +20,7 @@ pub enum Commands {
     /// Transfer and run PRG from file or archive
     #[clap(arg_required_else_help = true)]
     Prg {
-        /// File or url to load or scan (.prg|.d64|.d81)
+        /// File/URL to load or scan (.prg|.d64|.d81)
         #[clap(value_parser)]
         file: String,
         /// Reset before loading
