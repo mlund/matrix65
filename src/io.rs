@@ -42,10 +42,10 @@ fn load_bytes(filename: &str) -> std::io::Result<Vec<u8>> {
 /// of found PRG files. Returns intended load address and raw bytes.
 pub fn load_prg(file: &str) -> std::io::Result<(u16, Vec<u8>)> {
     match std::path::Path::new(&file).extension() {
-        None => load_with_load_address(&file),
+        None => load_with_load_address(file),
         Some(os_str) => match os_str.to_ascii_lowercase().to_str() {
-            Some("prg") => load_with_load_address(&file),
-            Some("d81") | Some("d64") => cbm_select_and_load(&file),
+            Some("prg") => load_with_load_address(file),
+            Some("d81") | Some("d64") => cbm_select_and_load(file),
             _ => {
                 let error =
                     std::io::Error::new(std::io::ErrorKind::Other, "invalid file extension");
@@ -69,7 +69,7 @@ fn purge_load_address(bytes: &mut Vec<u8>) -> u16 {
     load_address
 }
 
-/// Open a CBM diskimage from file or url
+/// Open a CBM disk image from file or url
 fn cbm_open(diskimage: &str) -> std::io::Result<Box<dyn cbm::disk::Disk>> {
     if diskimage.starts_with("http") {
         let tmp_dir = Builder::new().tempdir()?;
@@ -80,7 +80,7 @@ fn cbm_open(diskimage: &str) -> std::io::Result<Box<dyn cbm::disk::Disk>> {
             .bytes()
             .unwrap()
             .to_vec();
-        save_binary(filename, &bytes);
+        save_binary(filename, &bytes)?;
         return disk::open(filename, false);
     }
     disk::open(diskimage, false)
