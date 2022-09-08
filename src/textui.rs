@@ -142,9 +142,14 @@ fn ui<B: Backend>(f: &mut Frame<B>, app: &mut App) {
         ]);
     f.render_stateful_widget(table, chunks[0], &mut app.state);
 
+    let fileinfo_widget = make_fileinfo_widget(app);
+    f.render_widget(fileinfo_widget, chunks[1]);
+}
+
+fn make_fileinfo_widget(app: &mut App) -> Paragraph {
     let sel = app.state.selected().unwrap_or(0);
     let item = &app.filehost_items[sel];
-    let text = vec![
+    let fileinfo_text = vec![
         Spans::from(format!("Title:      {}", item.title)),
         Spans::from(format!("Filename:   {}", item.filename)),
         Spans::from(format!("Category:   {} - {}", item.category, item.kind)),
@@ -152,11 +157,9 @@ fn ui<B: Backend>(f: &mut Frame<B>, app: &mut App) {
         Spans::from(format!("Published:  {}", item.published)),
         Spans::from(format!("Rating:     {}", item.rating)),
     ];
-
-    let b = Block::default()
+    let block = Block::default()
         .title(Span::styled("File Info", Style::default().add_modifier(Modifier::BOLD),))
         .borders(Borders::ALL)
         .border_type(BorderType::Rounded);
-    let fileinfo_widget = Paragraph::new(text).block(b).alignment(Alignment::Left);
-    f.render_widget(fileinfo_widget, chunks[1]);
+    Paragraph::new(fileinfo_text).block(block).alignment(Alignment::Left)
 }
