@@ -142,7 +142,7 @@ fn ui<B: Backend>(f: &mut Frame<B>, app: &mut App) {
         ]);
     f.render_stateful_widget(table, chunks[0], &mut app.state);
 
-    let fileinfo_widget = make_fileinfo_widget(app);
+    let fileinfo_widget = make_fileinfo_widget(&app);
     f.render_widget(fileinfo_widget, chunks[1]);
 }
 
