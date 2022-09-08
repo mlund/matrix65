@@ -146,7 +146,7 @@ fn ui<B: Backend>(f: &mut Frame<B>, app: &mut App) {
     f.render_widget(fileinfo_widget, chunks[1]);
 }
 
-fn make_fileinfo_widget(app: &mut App) -> Paragraph {
+fn make_fileinfo_widget(app: &App) -> Paragraph {
     let sel = app.state.selected().unwrap_or(0);
     let item = &app.filehost_items[sel];
     let fileinfo_text = vec![
