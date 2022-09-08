@@ -6,9 +6,10 @@ use crossterm::{
 use std::{error::Error, io};
 use tui::{
     backend::{Backend, CrosstermBackend},
-    layout::{Constraint, Layout},
+    layout::{Alignment, Constraint, Direction, Layout},
     style::{Color, Modifier, Style},
-    widgets::{Block, Borders, Cell, Row, Table, TableState},
+    text::{Span, Spans},
+    widgets::{Block, BorderType, Borders, Cell, Paragraph, Row, Table, TableState},
     Frame, Terminal,
 };
 
@@ -99,9 +100,9 @@ fn run_app<B: Backend>(terminal: &mut Terminal<B>, mut app: App) -> io::Result<(
 }
 
 fn ui<B: Backend>(f: &mut Frame<B>, app: &mut App) {
-    let rects = Layout::default()
-        .constraints([Constraint::Percentage(100)].as_ref())
-        .margin(2)
+    let chunks = Layout::default()
+        .direction(Direction::Vertical)
+        .constraints([Constraint::Min(10), Constraint::Max(8)].as_ref())
         .split(f.size());
 
     let selected_style = Style::default().add_modifier(Modifier::REVERSED);
@@ -112,7 +113,7 @@ fn ui<B: Backend>(f: &mut Frame<B>, app: &mut App) {
     let header = Row::new(header_cells)
         .style(normal_style)
         .height(1)
-        .bottom_margin(1);
+        .bottom_margin(0);
     let rows = app.filehost_items.iter().map(|item| {
         let col_data = item.columns();
         let height = col_data
@@ -124,19 +125,38 @@ fn ui<B: Backend>(f: &mut Frame<B>, app: &mut App) {
         let cells = col_data.iter().map(|c| Cell::from(*c));
         Row::new(cells).height(height as u16).bottom_margin(0)
     });
-    let t = Table::new(rows)
+    let table = Table::new(rows)
         .header(header)
         .block(
             Block::default()
                 .borders(Borders::ALL)
-                .title("🌈 Filehost entries"),
+                .border_type(BorderType::Rounded)
+                .title(Span::styled("🌈 Filehost entries", Style::default().add_modifier(Modifier::BOLD),))
         )
         .highlight_style(selected_style)
-        .highlight_symbol(">> ")
+        .highlight_symbol("")
         .widths(&[
             Constraint::Percentage(50),
             Constraint::Length(30),
             Constraint::Min(10),
         ]);
-    f.render_stateful_widget(t, rects[0], &mut app.state);
+    f.render_stateful_widget(table, chunks[0], &mut app.state);
+
+    let sel = app.state.selected().unwrap_or(0);
+    let item = &app.filehost_items[sel];
+    let text = vec![
+        Spans::from(format!("Title:      {}", item.title)),
+        Spans::from(format!("Filename:   {}", item.filename)),
+        Spans::from(format!("Category:   {} - {}", item.category, item.kind)),
+        Spans::from(format!("Author:     {}", item.author)),
+        Spans::from(format!("Published:  {}", item.published)),
+        Spans::from(format!("Rating:     {}", item.rating)),
+    ];
+
+    let b = Block::default()
+        .title(Span::styled("File Info", Style::default().add_modifier(Modifier::BOLD),))
+        .borders(Borders::ALL)
+        .border_type(BorderType::Rounded);
+    let fileinfo_widget = Paragraph::new(text).block(b).alignment(Alignment::Left);
+    f.render_widget(fileinfo_widget, chunks[1]);
 }
