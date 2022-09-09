@@ -22,6 +22,7 @@ struct App {
     filehost_items: Vec<filehost::Record>,
     show_help: bool,
     port: Box<dyn SerialPort>,
+    status_line: String,
 }
 
 impl App {
@@ -31,6 +32,7 @@ impl App {
             filehost_items: filehost_itemsss.to_vec(),
             show_help: false,
             port: portt.try_clone().unwrap(),
+            status_line: String::new(),
         }
     }
     pub fn next(&mut self) {
@@ -72,6 +74,14 @@ impl App {
         let url = self.selected_url();
         serial::handle_prg(&mut self.port, &url, reset_before_run, true);
     }
+
+    pub fn set_status_line(&mut self, text: &str) {
+        self.status_line = String::from(text);
+    }
+
+    pub fn clear_status_line(&mut self) {
+        self.status_line.clear();
+    }
 }
 
 pub fn start_tui(
@@ -111,6 +121,13 @@ fn run_app<B: Backend>(terminal: &mut Terminal<B>, mut app: App) -> io::Result<(
 
         if let Event::Key(key) = event::read()? {
             match key.code {
+                KeyCode::Char('r') | KeyCode::Char('R') => {
+                    app.set_status_line("Busy...");
+                    terminal.draw(|f| ui(f, &mut app))?;
+                }
+                _ => {}
+            }
+            match key.code {
                 KeyCode::Char('q') => return Ok(()),
                 KeyCode::Down => app.next(),
                 KeyCode::Up => app.previous(),
@@ -119,6 +136,7 @@ fn run_app<B: Backend>(terminal: &mut Terminal<B>, mut app: App) -> io::Result<(
                 KeyCode::Char('R') => app.run(true),
                 _ => {}
             }
+            app.set_status_line("Ready");
         }
     }
 }
@@ -126,7 +144,14 @@ fn run_app<B: Backend>(terminal: &mut Terminal<B>, mut app: App) -> io::Result<(
 fn ui<B: Backend>(f: &mut Frame<B>, app: &mut App) {
     let chunks = Layout::default()
         .direction(Direction::Vertical)
-        .constraints([Constraint::Min(4), Constraint::Length(8)].as_ref())
+        .constraints(
+            [
+                Constraint::Min(4),
+                Constraint::Length(8),
+                Constraint::Length(3),
+            ]
+            .as_ref(),
+        )
         .split(f.size());
 
     let selected_style = Style::default().add_modifier(Modifier::REVERSED);
@@ -173,36 +198,55 @@ fn ui<B: Backend>(f: &mut Frame<B>, app: &mut App) {
     f.render_widget(fileinfo_widget, chunks[1]);
 
     if app.show_help {
-        let area = centered_rect(30, 30, f.size());
-        let block = Block::default()
-            .title(Span::styled(
-                "Keyboard Shortcuts",
-                Style::default()
-                    .add_modifier(Modifier::BOLD)
-                    .fg(Color::White),
-            ))
-            .style(Style::default().bg(Color::Red))
-            .borders(Borders::ALL)
-            .border_type(BorderType::Rounded);
-        let text = vec![
-            Spans::from(Span::styled("Run (r)", Style::default().fg(Color::White))),
-            Spans::from(Span::styled(
-                "Reset and Run (r)",
-                Style::default().fg(Color::White),
-            )),
-            Spans::from(Span::styled(
-                "Download (d)",
-                Style::default().fg(Color::White),
-            )),
-            Spans::from(Span::styled("Help (h)", Style::default().fg(Color::White))),
-            Spans::from(Span::styled("Quit (q)", Style::default().fg(Color::White))),
-        ];
-        let paragraph = Paragraph::new(text.clone())
-            .block(block)
-            .alignment(Alignment::Center);
-        f.render_widget(Clear, area); //this clears out the background
-        f.render_widget(paragraph, area);
+        app.status_line = String::from("hejsa");
+        render_help_popup(f);
     }
+
+    let par = Paragraph::new(vec![Spans::from(format!("{}", &app.status_line))])
+        .block(
+            Block::default()
+                .title(Span::styled(
+                    "Status",
+                    Style::default().add_modifier(Modifier::BOLD),
+                ))
+                .borders(Borders::ALL)
+                .border_type(BorderType::Rounded),
+        )
+        .alignment(Alignment::Left);
+    f.render_widget(par, chunks[2]);
+}
+
+fn render_help_popup<B: Backend>(f: &mut Frame<B>) {
+    let area = centered_rect(30, 30, f.size());
+    let block = Block::default()
+        .title(Span::styled(
+            "Keyboard Shortcuts",
+            Style::default()
+                .add_modifier(Modifier::BOLD)
+                .fg(Color::White),
+        ))
+        .style(Style::default().bg(Color::Red))
+        .borders(Borders::ALL)
+        .border_type(BorderType::Rounded);
+    let text = vec![
+        Spans::from(Span::styled("Run (r)", Style::default().fg(Color::White))),
+        Spans::from(Span::styled(
+            "Reset & Run (r)",
+            Style::default().fg(Color::White),
+        )),
+        Spans::from(Span::styled(
+            "Download (d)",
+            Style::default().fg(Color::White),
+        )),
+        Spans::from(Span::styled("Help (h)", Style::default().fg(Color::White))),
+        Spans::from(Span::styled("Quit (q)", Style::default().fg(Color::White))),
+    ];
+    let paragraph = Paragraph::new(text.clone())
+        .block(block)
+        .alignment(Alignment::Center);
+    f.render_widget(Clear, area);
+    //this clears out the background
+    f.render_widget(paragraph, area);
 }
 
 fn make_fileinfo_widget(app: &App) -> Paragraph {
