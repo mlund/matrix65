@@ -6,18 +6,21 @@ use crossterm::{
 use std::{error::Error, io};
 use tui::{
     backend::{Backend, CrosstermBackend},
-    layout::{Alignment, Constraint, Direction, Layout},
+    layout::{Alignment, Constraint, Direction, Layout, Rect},
     style::{Color, Modifier, Style},
     text::{Span, Spans},
-    widgets::{Block, BorderType, Borders, Cell, Paragraph, Row, Table, TableState},
+    widgets::{Block, BorderType, Borders, Cell, Clear, Paragraph, Row, Table, TableState},
     Frame, Terminal,
 };
 
 use crate::filehost;
+use crate::serial;
+use serialport::SerialPort;
 
 struct App {
     state: TableState,
     filehost_items: Vec<filehost::Record>,
+    show_help: bool,
 }
 
 impl App {
@@ -25,6 +28,7 @@ impl App {
         App {
             state: TableState::default(),
             filehost_items: filehost_itemsss.to_vec(),
+            show_help: false,
         }
     }
     pub fn next(&mut self) {
@@ -56,7 +60,10 @@ impl App {
     }
 }
 
-pub fn start_tui(filehost_items: &[filehost::Record]) -> Result<(), Box<dyn Error>> {
+pub fn start_tui(
+    port: &mut Box<dyn SerialPort>,
+    filehost_items: &[filehost::Record],
+) -> Result<(), Box<dyn Error>> {
     // setup terminal
     enable_raw_mode()?;
     let mut stdout = io::stdout();
@@ -66,7 +73,7 @@ pub fn start_tui(filehost_items: &[filehost::Record]) -> Result<(), Box<dyn Erro
 
     // create app and run it
     let app = App::new(filehost_items);
-    let res = run_app(&mut terminal, app);
+    let res = run_app(&mut terminal, app, port);
 
     // restore terminal
     disable_raw_mode()?;
@@ -84,15 +91,29 @@ pub fn start_tui(filehost_items: &[filehost::Record]) -> Result<(), Box<dyn Erro
     Ok(())
 }
 
-fn run_app<B: Backend>(terminal: &mut Terminal<B>, mut app: App) -> io::Result<()> {
+fn run_app<B: Backend>(
+    terminal: &mut Terminal<B>,
+    mut app: App,
+    port: &mut Box<dyn SerialPort>,
+) -> io::Result<()> {
     loop {
         terminal.draw(|f| ui(f, &mut app))?;
 
         if let Event::Key(key) = event::read()? {
+            let sel = app.state.selected().unwrap_or(0);
+            let item = &app.filehost_items[sel];
+            let url = format!("https://files.mega65.org/{}", &item.location);
             match key.code {
                 KeyCode::Char('q') => return Ok(()),
                 KeyCode::Down => app.next(),
                 KeyCode::Up => app.previous(),
+                KeyCode::Char('h') | KeyCode::Enter => app.show_help = !app.show_help,
+                KeyCode::Char('r') => {
+                    serial::handle_prg(port, &url, false, true);
+                }
+                KeyCode::Char('R') => {
+                    serial::handle_prg(port, &url, true, true);
+                }
                 _ => {}
             }
         }
@@ -131,7 +152,10 @@ fn ui<B: Backend>(f: &mut Frame<B>, app: &mut App) {
             Block::default()
                 .borders(Borders::ALL)
                 .border_type(BorderType::Rounded)
-                .title(Span::styled("🌈 Filehost entries", Style::default().add_modifier(Modifier::BOLD),))
+                .title(Span::styled(
+                    "🌈 Filehost entries",
+                    Style::default().add_modifier(Modifier::BOLD),
+                )),
         )
         .highlight_style(selected_style)
         .highlight_symbol("")
@@ -144,6 +168,38 @@ fn ui<B: Backend>(f: &mut Frame<B>, app: &mut App) {
 
     let fileinfo_widget = make_fileinfo_widget(&app);
     f.render_widget(fileinfo_widget, chunks[1]);
+
+    if app.show_help {
+        let area = centered_rect(30, 30, f.size());
+        let block = Block::default()
+            .title(Span::styled(
+                "Keyboard Shortcuts",
+                Style::default()
+                    .add_modifier(Modifier::BOLD)
+                    .fg(Color::White),
+            ))
+            .style(Style::default().bg(Color::Red))
+            .borders(Borders::ALL)
+            .border_type(BorderType::Rounded);
+        let text = vec![
+            Spans::from(Span::styled("Run (r)", Style::default().fg(Color::White))),
+            Spans::from(Span::styled(
+                "Reset and Run (r)",
+                Style::default().fg(Color::White),
+            )),
+            Spans::from(Span::styled(
+                "Download (d)",
+                Style::default().fg(Color::White),
+            )),
+            Spans::from(Span::styled("Help (h)", Style::default().fg(Color::White))),
+            Spans::from(Span::styled("Quit (q)", Style::default().fg(Color::White))),
+        ];
+        let paragraph = Paragraph::new(text.clone())
+            .block(block)
+            .alignment(Alignment::Center);
+        f.render_widget(Clear, area); //this clears out the background
+        f.render_widget(paragraph, area);
+    }
 }
 
 fn make_fileinfo_widget(app: &App) -> Paragraph {
@@ -158,8 +214,40 @@ fn make_fileinfo_widget(app: &App) -> Paragraph {
         Spans::from(format!("Rating:     {}", item.rating)),
     ];
     let block = Block::default()
-        .title(Span::styled("File Info", Style::default().add_modifier(Modifier::BOLD),))
+        .title(Span::styled(
+            "File Info",
+            Style::default().add_modifier(Modifier::BOLD),
+        ))
         .borders(Borders::ALL)
         .border_type(BorderType::Rounded);
-    Paragraph::new(fileinfo_text).block(block).alignment(Alignment::Left)
+    Paragraph::new(fileinfo_text)
+        .block(block)
+        .alignment(Alignment::Left)
+}
+
+/// helper function to create a centered rect using up certain percentage of the available rect `r`
+fn centered_rect(percent_x: u16, percent_y: u16, r: Rect) -> Rect {
+    let popup_layout = Layout::default()
+        .direction(Direction::Vertical)
+        .constraints(
+            [
+                Constraint::Percentage((100 - percent_y) / 2),
+                Constraint::Percentage(percent_y),
+                Constraint::Percentage((100 - percent_y) / 2),
+            ]
+            .as_ref(),
+        )
+        .split(r);
+
+    Layout::default()
+        .direction(Direction::Horizontal)
+        .constraints(
+            [
+                Constraint::Percentage((100 - percent_x) / 2),
+                Constraint::Percentage(percent_x),
+                Constraint::Percentage((100 - percent_x) / 2),
+            ]
+            .as_ref(),
+        )
+        .split(popup_layout[1])[1]
 }

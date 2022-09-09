@@ -47,19 +47,7 @@ fn do_main() -> Result<(), Box<dyn Error>> {
         }
 
         input::Commands::Prg { file, reset, run } => {
-            let (load_address, bytes) = io::load_prg(&file)?;
-            if reset {
-                serial::reset(&mut port)?;
-            }
-            match load_address {
-                0x2001 => serial::go65(&mut port)?,
-                0x0801 => serial::go64(&mut port)?,
-                _ => todo!("arbitrary load address"),
-            }
-            serial::write_memory(&mut port, load_address, &bytes)?;
-            if run {
-                serial::type_text(&mut port, "run\r")?;
-            }
+            serial::handle_prg(&mut port, &file, reset, run)?;
         }
 
         input::Commands::Peek {
@@ -76,7 +64,7 @@ fn do_main() -> Result<(), Box<dyn Error>> {
 
         input::Commands::Filehost {} => {
             let entries = filehost::get_file_list()?;
-            textui::start_tui(&entries)?;
+            textui::start_tui(&mut port, &entries)?;
             //entries?.iter().for_each(|entry| entry.print());
         }
     }

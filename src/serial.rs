@@ -17,6 +17,7 @@ use log::{debug, info};
 use serialport::SerialPort;
 use std::thread;
 use std::time::Duration;
+use crate::io;
 
 /// Delay after writing to serial port
 const DELAY_WRITE: Duration = Duration::from_millis(20);
@@ -333,4 +334,24 @@ pub fn write_memory(
     thread::sleep(DELAY_WRITE);
     start_cpu(port)?;
     Ok(())
+}
+
+/// Transfers and optionally run PRG to MEGA65
+/// 
+/// Here `file` can be a local file or a url. CBM disk images are allowed and
+/// C64/C65 modes are detected from load address.
+pub fn handle_prg(port: &mut Box<dyn SerialPort>, file: &str, reset_before_run: bool, run: bool) -> std::io::Result<()> {
+    let (load_address, bytes) = io::load_prg(&file)?;
+    if reset_before_run {
+        reset(port)?;
+    }
+    match load_address {
+        0x2001 => go65(port)?,
+        0x0801 => go64(port)?,
+        _ => todo!("arbitrary load address"),
+    }
+    write_memory(port, load_address, &bytes)?;
+    Ok(if run {
+        type_text(port, "run\r")?;
+    })
 }
