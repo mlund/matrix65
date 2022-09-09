@@ -102,7 +102,7 @@ fn run_app<B: Backend>(terminal: &mut Terminal<B>, mut app: App) -> io::Result<(
 fn ui<B: Backend>(f: &mut Frame<B>, app: &mut App) {
     let chunks = Layout::default()
         .direction(Direction::Vertical)
-        .constraints([Constraint::Min(10), Constraint::Max(8)].as_ref())
+        .constraints([Constraint::Min(4), Constraint::Length(8)].as_ref())
         .split(f.size());
 
     let selected_style = Style::default().add_modifier(Modifier::REVERSED);
