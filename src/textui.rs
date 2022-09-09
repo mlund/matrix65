@@ -9,7 +9,9 @@ use tui::{
     layout::{Alignment, Constraint, Direction, Layout, Rect},
     style::{Color, Modifier, Style},
     text::{Span, Spans},
-    widgets::{Block, BorderType, Borders, Cell, Clear, Paragraph, Row, Table, TableState},
+    widgets::{
+        Block, BorderType, Borders, Cell, Clear, List, ListItem, Paragraph, Row, Table, TableState,
+    },
     Frame, Terminal,
 };
 
@@ -22,7 +24,7 @@ struct App {
     filehost_items: Vec<filehost::Record>,
     show_help: bool,
     port: Box<dyn SerialPort>,
-    status_line: String,
+    messages: Vec<String>,
 }
 
 impl App {
@@ -32,7 +34,7 @@ impl App {
             filehost_items: filehost_items.to_vec(),
             show_help: false,
             port: port.try_clone().unwrap(),
-            status_line: String::new(),
+            messages: vec!["Matrix65 welcomes you to the FileHost!".to_string()],
         }
     }
     pub fn next(&mut self) {
@@ -74,17 +76,24 @@ impl App {
         let url = self.selected_url();
         match url.ends_with(".prg") {
             true => serial::handle_prg(&mut self.port, &url, reset_before_run, true),
-            false => Ok(())
+            false => Ok(()),
         }
     }
 
-    pub fn set_status_line(&mut self, text: &str) {
-        self.status_line = String::from(text);
+    pub fn ok_message(&mut self) {
+        let ok_text = "Ready".to_string();
+        if *self.messages.last().unwrap() != ok_text {
+            self.messages.push(ok_text);
+        }
+    }
+
+    pub fn add_message(&mut self, message: &str) {
+        self.messages.push(message.to_string());
     }
 
     #[allow(dead_code)]
     pub fn clear_status_line(&mut self) {
-        self.status_line.clear();
+        //self.messages.clear();
     }
 }
 
@@ -126,7 +135,7 @@ fn run_app<B: Backend>(terminal: &mut Terminal<B>, mut app: App) -> io::Result<(
         if let Event::Key(key) = event::read()? {
             match key.code {
                 KeyCode::Char('r') | KeyCode::Char('R') => {
-                    app.set_status_line("Busy...");
+                    app.add_message("Downloading and running...");
                     terminal.draw(|f| ui(f, &mut app))?;
                 }
                 _ => {}
@@ -140,7 +149,7 @@ fn run_app<B: Backend>(terminal: &mut Terminal<B>, mut app: App) -> io::Result<(
                 KeyCode::Char('R') => app.run(true)?,
                 _ => {}
             }
-            app.set_status_line("Ready");
+            app.ok_message();
         }
     }
 }
@@ -148,50 +157,43 @@ fn run_app<B: Backend>(terminal: &mut Terminal<B>, mut app: App) -> io::Result<(
 fn ui<B: Backend>(f: &mut Frame<B>, app: &mut App) {
     let chunks = Layout::default()
         .direction(Direction::Vertical)
-        .constraints(
-            [
-                Constraint::Min(4),
-                Constraint::Length(8),
-            ]
-            .as_ref(),
-        )
+        .constraints([Constraint::Min(4), Constraint::Length(8)].as_ref())
         .split(f.size());
 
     let files_widget = make_files_widget(&app.filehost_items);
     f.render_stateful_widget(files_widget, chunks[0], &mut app.state);
 
     let chunks = Layout::default()
-         .direction(Direction::Horizontal)
-         .constraints([Constraint::Percentage(50), Constraint::Percentage(50)].as_ref())
-         .split(chunks[1]);
+        .direction(Direction::Horizontal)
+        .constraints([Constraint::Percentage(50), Constraint::Percentage(50)].as_ref())
+        .split(chunks[1]);
 
     let fileinfo_widget = make_fileinfo_widget(app);
     f.render_widget(fileinfo_widget, chunks[0]);
 
-    let status_widget = make_status_widget(&app.status_line);
-    f.render_widget(status_widget, chunks[1]);
+    let messages_widget = make_messages_widget(&app.messages);
+    f.render_widget(messages_widget, chunks[1]);
 
-    // Show help pop-up
     if app.show_help {
-        app.status_line = String::from("hejsa");
         render_help_widget(f);
     }
 }
 
-// Status widget
-fn make_status_widget(status_text: &String) -> Paragraph {
-    let status_widget = Paragraph::new(vec![Spans::from((&status_text).to_string())])
-        .block(
-            Block::default()
-                .title(Span::styled(
-                    "Messages",
-                    Style::default().add_modifier(Modifier::BOLD),
-                ))
-                .borders(Borders::ALL)
-                .border_type(BorderType::Rounded),
-        )
-        .alignment(Alignment::Left);
-    status_widget
+// Make messages widget
+fn make_messages_widget(app_messages: &[String]) -> List {
+    let messages: Vec<ListItem> = app_messages
+        .iter()
+        .enumerate()
+        .rev()
+        .map(|(i, m)| {
+            let content = vec![Spans::from(Span::raw(format!("{}: {}", i + 1, m)))];
+            ListItem::new(content)
+        })
+        .collect();
+    List::new(messages).block(Block::default().borders(Borders::ALL).title(Span::styled(
+        "Messages",
+        Style::default().add_modifier(Modifier::BOLD),
+    )))
 }
 
 fn make_files_widget(filehost_items: &[filehost::Record]) -> Table {
@@ -249,7 +251,10 @@ fn render_help_widget<B: Backend>(f: &mut Frame<B>) {
         .borders(Borders::ALL)
         .border_type(BorderType::Rounded);
     let text = vec![
-        Spans::from(Span::styled("Run selection (r)", Style::default().fg(Color::White))),
+        Spans::from(Span::styled(
+            "Run selection (r)",
+            Style::default().fg(Color::White),
+        )),
         Spans::from(Span::styled(
             "Reset & run selection (R)",
             Style::default().fg(Color::White),
@@ -258,7 +263,10 @@ fn render_help_widget<B: Backend>(f: &mut Frame<B>) {
             "Save selection to local disk (s)",
             Style::default().fg(Color::White),
         )),
-        Spans::from(Span::styled("Toggle help (h)", Style::default().fg(Color::White))),
+        Spans::from(Span::styled(
+            "Toggle help (h)",
+            Style::default().fg(Color::White),
+        )),
         Spans::from(Span::styled("Quit (q)", Style::default().fg(Color::White))),
     ];
     let paragraph = Paragraph::new(text.clone())
