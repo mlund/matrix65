@@ -63,11 +63,12 @@ fn do_main() -> Result<(), Box<dyn Error>> {
         }
 
         input::Commands::Filehost {} => {
-            let entries: Vec<_> = filehost::get_file_list()?
+            let mut entries: Vec<_> = filehost::get_file_list()?
                 .iter()
                 .cloned()
-                .filter(|item| item.filename.ends_with(".prg"))
+                .filter(|item| item.filename.to_lowercase().ends_with(".prg"))
                 .collect();
+            entries.sort_by_key(|i| i.title.clone());
             textui::start_tui(&mut port, &entries)?;
         }
     }

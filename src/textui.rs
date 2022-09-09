@@ -20,25 +20,27 @@ use crate::serial;
 use serialport::SerialPort;
 
 struct App {
-    state: TableState,
+    filehost_state: TableState,
     filehost_items: Vec<filehost::Record>,
     show_help: bool,
     port: Box<dyn SerialPort>,
     messages: Vec<String>,
+    toggle_sort: bool,
 }
 
 impl App {
     fn new(port: &mut Box<dyn SerialPort>, filehost_items: &[filehost::Record]) -> App {
         App {
-            state: TableState::default(),
+            filehost_state: TableState::default(),
             filehost_items: filehost_items.to_vec(),
             show_help: false,
             port: port.try_clone().unwrap(),
             messages: vec!["Matrix65 welcomes you to the FileHost!".to_string()],
+            toggle_sort: false,
         }
     }
     pub fn next(&mut self) {
-        let i = match self.state.selected() {
+        let i = match self.filehost_state.selected() {
             Some(i) => {
                 if i >= self.filehost_items.len() - 1 {
                     0
@@ -48,11 +50,22 @@ impl App {
             }
             None => 0,
         };
-        self.state.select(Some(i));
+        self.filehost_state.select(Some(i));
+    }
+
+    /// Toggles filehost file sorting by date or title
+    pub fn sort_filehost(&mut self) {
+        if self.toggle_sort {
+            self.filehost_items.sort_by_key(|i| i.published.clone());
+            self.filehost_items.reverse();
+        } else {
+            self.filehost_items.sort_by_key(|i| i.title.clone());
+        }
+        self.toggle_sort = !self.toggle_sort;
     }
 
     pub fn previous(&mut self) {
-        let i = match self.state.selected() {
+        let i = match self.filehost_state.selected() {
             Some(i) => {
                 if i == 0 {
                     self.filehost_items.len() - 1
@@ -62,11 +75,11 @@ impl App {
             }
             None => 0,
         };
-        self.state.select(Some(i));
+        self.filehost_state.select(Some(i));
     }
 
     fn selected_url(&self) -> String {
-        let sel = self.state.selected().unwrap_or(0);
+        let sel = self.filehost_state.selected().unwrap_or(0);
         let item = &self.filehost_items[sel];
         format!("https://files.mega65.org/{}", &item.location)
     }
@@ -147,6 +160,7 @@ fn run_app<B: Backend>(terminal: &mut Terminal<B>, mut app: App) -> io::Result<(
                 KeyCode::Char('h') | KeyCode::Enter => app.show_help = !app.show_help,
                 KeyCode::Char('r') => app.run(false)?,
                 KeyCode::Char('R') => app.run(true)?,
+                KeyCode::Char('s') => app.sort_filehost(),
                 _ => {}
             }
             app.ok_message();
@@ -161,7 +175,7 @@ fn ui<B: Backend>(f: &mut Frame<B>, app: &mut App) {
         .split(f.size());
 
     let files_widget = make_files_widget(&app.filehost_items);
-    f.render_stateful_widget(files_widget, chunks[0], &mut app.state);
+    f.render_stateful_widget(files_widget, chunks[0], &mut app.filehost_state);
 
     let chunks = Layout::default()
         .direction(Direction::Horizontal)
@@ -232,14 +246,14 @@ fn make_files_widget(filehost_items: &[filehost::Record]) -> Table {
         .highlight_symbol("")
         .widths(&[
             Constraint::Percentage(50),
-            Constraint::Length(30),
-            Constraint::Min(10),
+            Constraint::Percentage(25),
+            Constraint::Percentage(25),
         ]);
     table
 }
 
 fn render_help_widget<B: Backend>(f: &mut Frame<B>) {
-    let area = centered_rect(30, 30, f.size());
+    let area = centered_rect(35, 30, f.size());
     let block = Block::default()
         .title(Span::styled(
             "Keyboard Shortcuts",
@@ -260,7 +274,11 @@ fn render_help_widget<B: Backend>(f: &mut Frame<B>) {
             Style::default().fg(Color::White),
         )),
         Spans::from(Span::styled(
-            "Save selection to local disk (s)",
+            "Save selection to local disk (w)",
+            Style::default().fg(Color::White),
+        )),
+        Spans::from(Span::styled(
+            "Toggle sorting by title or date (s)",
             Style::default().fg(Color::White),
         )),
         Spans::from(Span::styled(
@@ -278,7 +296,7 @@ fn render_help_widget<B: Backend>(f: &mut Frame<B>) {
 }
 
 fn make_fileinfo_widget(app: &App) -> Paragraph {
-    let sel = app.state.selected().unwrap_or(0);
+    let sel = app.filehost_state.selected().unwrap_or(0);
     let item = &app.filehost_items[sel];
     let fileinfo_text = vec![
         Spans::from(format!("Title:      {}", item.title)),
