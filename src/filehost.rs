@@ -27,7 +27,7 @@ impl Record {
 
     /// Create columns for tui list
     pub fn columns(&self) -> Vec<&str> {
-        vec![&self.title, &self.kind, &self.rating]
+        vec![&self.title, &self.kind, &self.author]
     }
 }
 

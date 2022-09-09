@@ -170,7 +170,7 @@ fn ui<B: Backend>(f: &mut Frame<B>, app: &mut App) {
     // Show help pop-up
     if app.show_help {
         app.status_line = String::from("hejsa");
-        render_help_popup(f);
+        render_help_widget(f);
     }
 }
 
@@ -193,7 +193,7 @@ fn make_status_widget(status_text: &String) -> Paragraph {
 fn make_files_widget(filehost_items: &[filehost::Record]) -> Table {
     let selected_style = Style::default().add_modifier(Modifier::REVERSED);
     let normal_style = Style::default().bg(Color::Blue);
-    let header_cells = ["Title", "Type", "Rating"]
+    let header_cells = ["Title", "Type", "Author"]
         .iter()
         .map(|h| Cell::from(*h).style(Style::default().fg(Color::Yellow)));
     let header = Row::new(header_cells)
@@ -232,7 +232,7 @@ fn make_files_widget(filehost_items: &[filehost::Record]) -> Table {
     table
 }
 
-fn render_help_popup<B: Backend>(f: &mut Frame<B>) {
+fn render_help_widget<B: Backend>(f: &mut Frame<B>) {
     let area = centered_rect(30, 30, f.size());
     let block = Block::default()
         .title(Span::styled(
@@ -245,16 +245,16 @@ fn render_help_popup<B: Backend>(f: &mut Frame<B>) {
         .borders(Borders::ALL)
         .border_type(BorderType::Rounded);
     let text = vec![
-        Spans::from(Span::styled("Run (r)", Style::default().fg(Color::White))),
+        Spans::from(Span::styled("Run selection (r)", Style::default().fg(Color::White))),
         Spans::from(Span::styled(
-            "Reset & Run (R)",
+            "Reset & run selection (R)",
             Style::default().fg(Color::White),
         )),
         Spans::from(Span::styled(
-            "Download (d)",
+            "Save selection to local disk (s)",
             Style::default().fg(Color::White),
         )),
-        Spans::from(Span::styled("Help (h)", Style::default().fg(Color::White))),
+        Spans::from(Span::styled("Toggle help (h)", Style::default().fg(Color::White))),
         Spans::from(Span::styled("Quit (q)", Style::default().fg(Color::White))),
     ];
     let paragraph = Paragraph::new(text.clone())
