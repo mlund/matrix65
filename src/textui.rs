@@ -158,6 +158,39 @@ fn ui<B: Backend>(f: &mut Frame<B>, app: &mut App) {
         )
         .split(f.size());
 
+    let files_widget = make_files_widget(&app.filehost_items);
+    f.render_stateful_widget(files_widget, chunks[0], &mut app.state);
+
+    let fileinfo_widget = make_fileinfo_widget(app);
+    f.render_widget(fileinfo_widget, chunks[1]);
+
+    let status_widget = make_status_widget(&app.status_line);
+    f.render_widget(status_widget, chunks[2]);
+
+    // Show help pop-up
+    if app.show_help {
+        app.status_line = String::from("hejsa");
+        render_help_popup(f);
+    }
+}
+
+// Status widget
+fn make_status_widget(status_text: &String) -> Paragraph {
+    let status_widget = Paragraph::new(vec![Spans::from((&status_text).to_string())])
+        .block(
+            Block::default()
+                .title(Span::styled(
+                    "Status",
+                    Style::default().add_modifier(Modifier::BOLD),
+                ))
+                .borders(Borders::ALL)
+                .border_type(BorderType::Rounded),
+        )
+        .alignment(Alignment::Left);
+    status_widget
+}
+
+fn make_files_widget(filehost_items: &[filehost::Record]) -> Table {
     let selected_style = Style::default().add_modifier(Modifier::REVERSED);
     let normal_style = Style::default().bg(Color::Blue);
     let header_cells = ["Title", "Type", "Rating"]
@@ -167,7 +200,7 @@ fn ui<B: Backend>(f: &mut Frame<B>, app: &mut App) {
         .style(normal_style)
         .height(1)
         .bottom_margin(0);
-    let rows = app.filehost_items.iter().map(|item| {
+    let rows = filehost_items.iter().map(|item| {
         let col_data = item.columns();
         let height = col_data
             .iter()
@@ -196,30 +229,7 @@ fn ui<B: Backend>(f: &mut Frame<B>, app: &mut App) {
             Constraint::Length(30),
             Constraint::Min(10),
         ]);
-    f.render_stateful_widget(table, chunks[0], &mut app.state);
-
-    let fileinfo_widget = make_fileinfo_widget(app);
-    f.render_widget(fileinfo_widget, chunks[1]);
-
-    // Show help pop-up
-    if app.show_help {
-        app.status_line = String::from("hejsa");
-        render_help_popup(f);
-    }
-
-    // Status widget
-    let par = Paragraph::new(vec![Spans::from((&app.status_line).to_string())])
-        .block(
-            Block::default()
-                .title(Span::styled(
-                    "Status",
-                    Style::default().add_modifier(Modifier::BOLD),
-                ))
-                .borders(Borders::ALL)
-                .border_type(BorderType::Rounded),
-        )
-        .alignment(Alignment::Left);
-    f.render_widget(par, chunks[2]);
+    table
 }
 
 fn render_help_popup<B: Backend>(f: &mut Frame<B>) {
