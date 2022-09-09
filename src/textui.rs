@@ -26,12 +26,12 @@ struct App {
 }
 
 impl App {
-    fn new(portt: &mut Box<dyn SerialPort>, filehost_itemsss: &[filehost::Record]) -> App {
+    fn new(port: &mut Box<dyn SerialPort>, filehost_items: &[filehost::Record]) -> App {
         App {
             state: TableState::default(),
-            filehost_items: filehost_itemsss.to_vec(),
+            filehost_items: filehost_items.to_vec(),
             show_help: false,
-            port: portt.try_clone().unwrap(),
+            port: port.try_clone().unwrap(),
             status_line: String::new(),
         }
     }
