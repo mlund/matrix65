@@ -152,7 +152,6 @@ fn ui<B: Backend>(f: &mut Frame<B>, app: &mut App) {
             [
                 Constraint::Min(4),
                 Constraint::Length(8),
-                Constraint::Length(3),
             ]
             .as_ref(),
         )
@@ -161,11 +160,16 @@ fn ui<B: Backend>(f: &mut Frame<B>, app: &mut App) {
     let files_widget = make_files_widget(&app.filehost_items);
     f.render_stateful_widget(files_widget, chunks[0], &mut app.state);
 
+    let chunks = Layout::default()
+         .direction(Direction::Horizontal)
+         .constraints([Constraint::Percentage(50), Constraint::Percentage(50)].as_ref())
+         .split(chunks[1]);
+
     let fileinfo_widget = make_fileinfo_widget(app);
-    f.render_widget(fileinfo_widget, chunks[1]);
+    f.render_widget(fileinfo_widget, chunks[0]);
 
     let status_widget = make_status_widget(&app.status_line);
-    f.render_widget(status_widget, chunks[2]);
+    f.render_widget(status_widget, chunks[1]);
 
     // Show help pop-up
     if app.show_help {
@@ -180,7 +184,7 @@ fn make_status_widget(status_text: &String) -> Paragraph {
         .block(
             Block::default()
                 .title(Span::styled(
-                    "Status",
+                    "Messages",
                     Style::default().add_modifier(Modifier::BOLD),
                 ))
                 .borders(Borders::ALL)
