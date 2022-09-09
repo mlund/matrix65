@@ -341,7 +341,7 @@ pub fn write_memory(
 /// Here `file` can be a local file or a url. CBM disk images are allowed and
 /// C64/C65 modes are detected from load address.
 pub fn handle_prg(port: &mut Box<dyn SerialPort>, file: &str, reset_before_run: bool, run: bool) -> std::io::Result<()> {
-    let (load_address, bytes) = io::load_prg(&file)?;
+    let (load_address, bytes) = io::load_prg(file)?;
     if reset_before_run {
         reset(port)?;
     }
@@ -351,7 +351,8 @@ pub fn handle_prg(port: &mut Box<dyn SerialPort>, file: &str, reset_before_run: 
         _ => todo!("arbitrary load address"),
     }
     write_memory(port, load_address, &bytes)?;
-    Ok(if run {
+    if run {
         type_text(port, "run\r")?;
-    })
+    }
+    Ok(())
 }

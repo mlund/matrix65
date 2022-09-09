@@ -70,15 +70,16 @@ impl App {
     }
 
     /// Transfer and run selected file
-    pub fn run(&mut self, reset_before_run: bool) {
+    pub fn run(&mut self, reset_before_run: bool) -> std::io::Result<()> {
         let url = self.selected_url();
-        serial::handle_prg(&mut self.port, &url, reset_before_run, true);
+        serial::handle_prg(&mut self.port, &url, reset_before_run, true)
     }
 
     pub fn set_status_line(&mut self, text: &str) {
         self.status_line = String::from(text);
     }
 
+    #[allow(dead_code)]
     pub fn clear_status_line(&mut self) {
         self.status_line.clear();
     }
@@ -132,8 +133,8 @@ fn run_app<B: Backend>(terminal: &mut Terminal<B>, mut app: App) -> io::Result<(
                 KeyCode::Down => app.next(),
                 KeyCode::Up => app.previous(),
                 KeyCode::Char('h') | KeyCode::Enter => app.show_help = !app.show_help,
-                KeyCode::Char('r') => app.run(false),
-                KeyCode::Char('R') => app.run(true),
+                KeyCode::Char('r') => app.run(false)?,
+                KeyCode::Char('R') => app.run(true)?,
                 _ => {}
             }
             app.set_status_line("Ready");
@@ -194,15 +195,17 @@ fn ui<B: Backend>(f: &mut Frame<B>, app: &mut App) {
         ]);
     f.render_stateful_widget(table, chunks[0], &mut app.state);
 
-    let fileinfo_widget = make_fileinfo_widget(&app);
+    let fileinfo_widget = make_fileinfo_widget(app);
     f.render_widget(fileinfo_widget, chunks[1]);
 
+    // Show help pop-up
     if app.show_help {
         app.status_line = String::from("hejsa");
         render_help_popup(f);
     }
 
-    let par = Paragraph::new(vec![Spans::from(format!("{}", &app.status_line))])
+    // Status widget
+    let par = Paragraph::new(vec![Spans::from((&app.status_line).to_string())])
         .block(
             Block::default()
                 .title(Span::styled(
@@ -231,7 +234,7 @@ fn render_help_popup<B: Backend>(f: &mut Frame<B>) {
     let text = vec![
         Spans::from(Span::styled("Run (r)", Style::default().fg(Color::White))),
         Spans::from(Span::styled(
-            "Reset & Run (r)",
+            "Reset & Run (R)",
             Style::default().fg(Color::White),
         )),
         Spans::from(Span::styled(
