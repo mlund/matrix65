@@ -63,9 +63,12 @@ fn do_main() -> Result<(), Box<dyn Error>> {
         }
 
         input::Commands::Filehost {} => {
-            let entries = filehost::get_file_list()?;
+            let entries: Vec<_> = filehost::get_file_list()?
+                .iter()
+                .cloned()
+                .filter(|item| item.filename.ends_with(".prg") | item.filename.ends_with(".d81"))
+                .collect();
             textui::start_tui(&mut port, &entries)?;
-            //entries?.iter().for_each(|entry| entry.print());
         }
     }
     Ok(())

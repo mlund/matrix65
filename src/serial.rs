@@ -12,12 +12,12 @@
 // see the license for the specific language governing permissions and
 // limitations under the license.
 
+use crate::io;
 use hex::FromHex;
 use log::{debug, info};
 use serialport::SerialPort;
 use std::thread;
 use std::time::Duration;
-use crate::io;
 
 /// Delay after writing to serial port
 const DELAY_WRITE: Duration = Duration::from_millis(20);
@@ -337,10 +337,15 @@ pub fn write_memory(
 }
 
 /// Transfers and optionally run PRG to MEGA65
-/// 
+///
 /// Here `file` can be a local file or a url. CBM disk images are allowed and
 /// C64/C65 modes are detected from load address.
-pub fn handle_prg(port: &mut Box<dyn SerialPort>, file: &str, reset_before_run: bool, run: bool) -> std::io::Result<()> {
+pub fn handle_prg(
+    port: &mut Box<dyn SerialPort>,
+    file: &str,
+    reset_before_run: bool,
+    run: bool,
+) -> std::io::Result<()> {
     let (load_address, bytes) = io::load_prg(file)?;
     if reset_before_run {
         reset(port)?;
