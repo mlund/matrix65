@@ -72,7 +72,10 @@ impl App {
     /// Transfer and run selected file
     pub fn run(&mut self, reset_before_run: bool) -> std::io::Result<()> {
         let url = self.selected_url();
-        serial::handle_prg(&mut self.port, &url, reset_before_run, true)
+        match url.ends_with(".prg") {
+            true => serial::handle_prg(&mut self.port, &url, reset_before_run, true),
+            false => Ok(())
+        }
     }
 
     pub fn set_status_line(&mut self, text: &str) {
