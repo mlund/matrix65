@@ -21,14 +21,16 @@ struct App {
     state: TableState,
     filehost_items: Vec<filehost::Record>,
     show_help: bool,
+    port: Box<dyn SerialPort>,
 }
 
 impl App {
-    fn new(filehost_itemsss: &[filehost::Record]) -> App {
+    fn new(portt: &mut Box<dyn SerialPort>, filehost_itemsss: &[filehost::Record]) -> App {
         App {
             state: TableState::default(),
             filehost_items: filehost_itemsss.to_vec(),
             show_help: false,
+            port: portt.try_clone().unwrap(),
         }
     }
     pub fn next(&mut self) {
@@ -58,6 +60,18 @@ impl App {
         };
         self.state.select(Some(i));
     }
+
+    fn selected_url(&self) -> String {
+        let sel = self.state.selected().unwrap_or(0);
+        let item = &self.filehost_items[sel];
+        format!("https://files.mega65.org/{}", &item.location)
+    }
+
+    /// Transfer and run selected file
+    pub fn run(&mut self, reset_before_run: bool) {
+        let url = self.selected_url();
+        serial::handle_prg(&mut self.port, &url, reset_before_run, true);
+    }
 }
 
 pub fn start_tui(
@@ -72,8 +86,8 @@ pub fn start_tui(
     let mut terminal = Terminal::new(backend)?;
 
     // create app and run it
-    let app = App::new(filehost_items);
-    let res = run_app(&mut terminal, app, port);
+    let app = App::new(port, filehost_items);
+    let res = run_app(&mut terminal, app);
 
     // restore terminal
     disable_raw_mode()?;
@@ -91,29 +105,18 @@ pub fn start_tui(
     Ok(())
 }
 
-fn run_app<B: Backend>(
-    terminal: &mut Terminal<B>,
-    mut app: App,
-    port: &mut Box<dyn SerialPort>,
-) -> io::Result<()> {
+fn run_app<B: Backend>(terminal: &mut Terminal<B>, mut app: App) -> io::Result<()> {
     loop {
         terminal.draw(|f| ui(f, &mut app))?;
 
         if let Event::Key(key) = event::read()? {
-            let sel = app.state.selected().unwrap_or(0);
-            let item = &app.filehost_items[sel];
-            let url = format!("https://files.mega65.org/{}", &item.location);
             match key.code {
                 KeyCode::Char('q') => return Ok(()),
                 KeyCode::Down => app.next(),
                 KeyCode::Up => app.previous(),
                 KeyCode::Char('h') | KeyCode::Enter => app.show_help = !app.show_help,
-                KeyCode::Char('r') => {
-                    serial::handle_prg(port, &url, false, true);
-                }
-                KeyCode::Char('R') => {
-                    serial::handle_prg(port, &url, true, true);
-                }
+                KeyCode::Char('r') => app.run(false),
+                KeyCode::Char('R') => app.run(true),
                 _ => {}
             }
         }
