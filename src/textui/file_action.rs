@@ -1,23 +1,77 @@
 use crate::textui::centered_rect;
 use tui::{
-    backend::{Backend},
-    layout::{Alignment},
-    style::{Modifier, Style, Color},
+    backend::Backend,
+    layout::Alignment,
+    style::{Color, Modifier, Style},
     text::{Span, Spans},
-    widgets::{
-        Block, BorderType, Borders, Paragraph, Clear,
-    },
+    widgets::{Block, BorderType, Borders, Clear, List, ListItem, ListState, Paragraph},
     Frame,
 };
 
-/// Handles actions on selected files, e.g
-/// running, downloading, etc.
+pub struct StatefulList<T> {
+    pub state: ListState,
+    pub items: Vec<T>,
+}
 
-pub fn render_prg_action_widget<B: Backend>(f: &mut Frame<B>) {
-    let area = centered_rect(35, 30, f.size());
+impl<T> StatefulList<T> {
+    pub fn with_items(items: Vec<T>) -> StatefulList<T> {
+        StatefulList {
+            state: ListState::default(),
+            items,
+        }
+    }
+
+    fn next(&mut self) {
+        let i = match self.state.selected() {
+            Some(i) => {
+                if i >= self.items.len() - 1 {
+                    0
+                } else {
+                    i + 1
+                }
+            }
+            None => 0,
+        };
+        self.state.select(Some(i));
+    }
+
+    fn previous(&mut self) {
+        let i = match self.state.selected() {
+            Some(i) => {
+                if i == 0 {
+                    self.items.len() - 1
+                } else {
+                    i - 1
+                }
+            }
+            None => 0,
+        };
+        self.state.select(Some(i));
+    }
+
+    fn unselect(&mut self) {
+        self.state.select(None);
+    }
+}
+
+// pub fn keypress(&key: crossterm::event::KeyCode) -> io::Result<()> {
+//     match key {
+//         KeyCode::Down => self.next(),
+//         KeyCode::Up => self.previous(),
+//         KeyCode::Char('r') => self.run(false)?,
+//         KeyCode::Char('R') => self.run(true)?,
+//         KeyCode::Char('s') => self.sort_filehost(),
+//         _ => { }
+//     }
+//     Ok(())
+// }
+
+/// Handles actions on selected files, e.g running, downloading, etc.
+pub fn render_prg_widget<B: Backend>(f: &mut Frame<B>, items_str: &[&str]) {
+    let area = centered_rect(15, 15, f.size());
     let block = Block::default()
         .title(Span::styled(
-            "PRG action",
+            "File actions",
             Style::default()
                 .add_modifier(Modifier::BOLD)
                 .fg(Color::White),
@@ -25,21 +79,14 @@ pub fn render_prg_action_widget<B: Backend>(f: &mut Frame<B>) {
         .style(Style::default().bg(Color::Red))
         .borders(Borders::ALL)
         .border_type(BorderType::Rounded);
-    let text = vec![
-        Spans::from(Span::styled(
-            "Run (r)",
-            Style::default().fg(Color::White),
-        )),
-        Spans::from(Span::styled(
-            "Reset & Run (R)",
-            Style::default().fg(Color::White),
-        )),
-        Spans::from(Span::styled("Cancel", Style::default().fg(Color::White))),
-    ];
-    let paragraph = Paragraph::new(text.clone())
-        .block(block)
-        .alignment(Alignment::Center);
+
+    let items: Vec<ListItem> = items_str.iter().map(|i| ListItem::new(*i)).collect();
+    let action_list = List::new(items).block(block).highlight_style(
+        Style::default()
+            .bg(Color::LightGreen)
+            .add_modifier(Modifier::BOLD),
+    );
+
     f.render_widget(Clear, area);
-    //this clears out the background
-    f.render_widget(paragraph, area);
+    f.render_widget(action_list, area);
 }

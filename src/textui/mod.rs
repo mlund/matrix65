@@ -28,18 +28,20 @@ enum AppWidgets {
     FileSelector, FileAction, Help,
 }
 
-struct App {
+struct App<'a> {
     files: FilesApp,
     messages: Vec<String>,
     current_widget: AppWidgets,
+    file_action: file_action::StatefulList<&'a str>,
 }
 
-impl App {
-    fn new(port: &mut Box<dyn SerialPort>, filehost_items: &[filehost::Record]) -> App {
+impl App<'_> {
+    fn new<'a >(port: &'a mut Box<dyn SerialPort>, filehost_items: &'a [filehost::Record]) -> App<'a> {
         App {
             files: FilesApp::new(port, filehost_items),
             messages: vec!["Matrix65 welcomes you to the FileHost!".to_string()],
             current_widget: AppWidgets::FileSelector,
+            file_action: file_action::StatefulList::with_items(vec!["Run", "Reset and Run", "Cancel"])
         }
     }
 
@@ -118,6 +120,7 @@ fn run_app<B: Backend>(terminal: &mut Terminal<B>, mut app: App) -> io::Result<(
                     terminal.draw(|f| ui(f, &mut app))?;
                 }
                 KeyCode::Enter => {
+                    app.current_widget = AppWidgets::FileAction;
                 }
                 _ => {}
             }
@@ -149,6 +152,11 @@ fn ui<B: Backend>(f: &mut Frame<B>, app: &mut App) {
 
     if app.current_widget == AppWidgets::Help {
         render_help_widget(f);
+    }
+
+    if app.current_widget == AppWidgets::FileAction {
+        file_action::render_prg_widget(f, &app.file_action.items);
+        app.current_widget = AppWidgets::FileSelector;
     }
 }
 
