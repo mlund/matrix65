@@ -10,98 +10,17 @@ use tui::{
     style::{Color, Modifier, Style},
     text::{Span, Spans},
     widgets::{
-        Block, BorderType, Borders, Cell, Clear, List, ListItem, Paragraph, Row, Table, TableState,
+        Block, BorderType, Borders, Cell, Clear, List, ListItem, Paragraph, Row, Table,
     },
     Frame, Terminal,
 };
 
 use crate::filehost;
-use crate::serial;
 use serialport::SerialPort;
 
-struct FilesApp {
-    state: TableState,
-    items: Vec<filehost::Record>,
-    port: Box<dyn SerialPort>,
-    toggle_sort: bool,
-}
-
-impl FilesApp {
-    fn new(port: &mut Box<dyn SerialPort>, filehost_items: &[filehost::Record]) -> FilesApp {
-        FilesApp {
-            state: TableState::default(),
-            items: filehost_items.to_vec(),
-            port: port.try_clone().unwrap(),
-            toggle_sort: false,
-        }
-    }
-
-    fn keypress(&mut self, key: crossterm::event::KeyCode) -> io::Result<()> {
-        match key {
-            KeyCode::Down => self.next(),
-            KeyCode::Up => self.previous(),
-            KeyCode::Char('r') => self.run(false)?,
-            KeyCode::Char('R') => self.run(true)?,
-            KeyCode::Char('s') => self.sort_filehost(),
-            _ => { }
-        }
-        Ok(())
-    }
-
-    pub fn next(&mut self) {
-        let i = match self.state.selected() {
-            Some(i) => {
-                if i >= self.items.len() - 1 {
-                    0
-                } else {
-                    i + 1
-                }
-            }
-            None => 0,
-        };
-        self.state.select(Some(i));
-    }
-
-    /// Toggles filehost file sorting by date or title
-    pub fn sort_filehost(&mut self) {
-        if self.toggle_sort {
-            self.items.sort_by_key(|i| i.published.clone());
-            self.items.reverse();
-        } else {
-            self.items.sort_by_key(|i| i.title.clone());
-        }
-        self.toggle_sort = !self.toggle_sort;
-    }
-
-    pub fn previous(&mut self) {
-        let i = match self.state.selected() {
-            Some(i) => {
-                if i == 0 {
-                    self.items.len() - 1
-                } else {
-                    i - 1
-                }
-            }
-            None => 0,
-        };
-        self.state.select(Some(i));
-    }
-
-    fn selected_url(&self) -> String {
-        let sel = self.state.selected().unwrap_or(0);
-        let item = &self.items[sel];
-        format!("https://files.mega65.org/{}", &item.location)
-    }
-
-    /// Transfer and run selected file
-    pub fn run(&mut self, reset_before_run: bool) -> std::io::Result<()> {
-        let url = self.selected_url();
-        match url.ends_with(".prg") {
-            true => serial::handle_prg(&mut self.port, &url, reset_before_run, true),
-            false => Ok(()),
-        }
-    }
-}
+mod file_action;
+mod file_selector;
+use file_selector::FilesApp;
 
 struct App {
     files: FilesApp,
@@ -204,7 +123,7 @@ fn ui<B: Backend>(f: &mut Frame<B>, app: &mut App) {
         .constraints([Constraint::Percentage(50), Constraint::Percentage(50)].as_ref())
         .split(chunks[1]);
 
-    let fileinfo_widget = make_fileinfo_widget(app);
+    let fileinfo_widget = app.files.make_widget();
     f.render_widget(fileinfo_widget, chunks[0]);
 
     let messages_widget = make_messages_widget(&app.messages);
@@ -315,29 +234,6 @@ fn render_help_widget<B: Backend>(f: &mut Frame<B>) {
     f.render_widget(Clear, area);
     //this clears out the background
     f.render_widget(paragraph, area);
-}
-
-fn make_fileinfo_widget(app: &App) -> Paragraph {
-    let sel = app.files.state.selected().unwrap_or(0);
-    let item = &app.files.items[sel];
-    let fileinfo_text = vec![
-        Spans::from(format!("Title:      {}", item.title)),
-        Spans::from(format!("Filename:   {}", item.filename)),
-        Spans::from(format!("Category:   {} - {}", item.category, item.kind)),
-        Spans::from(format!("Author:     {}", item.author)),
-        Spans::from(format!("Published:  {}", item.published)),
-        Spans::from(format!("Rating:     {}", item.rating)),
-    ];
-    let block = Block::default()
-        .title(Span::styled(
-            "File Info",
-            Style::default().add_modifier(Modifier::BOLD),
-        ))
-        .borders(Borders::ALL)
-        .border_type(BorderType::Rounded);
-    Paragraph::new(fileinfo_text)
-        .block(block)
-        .alignment(Alignment::Left)
 }
 
 /// helper function to create a centered rect using up certain percentage of the available rect `r`
