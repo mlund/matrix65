@@ -50,6 +50,37 @@ impl App {
     }
 
     pub fn keypress(&mut self, key: crossterm::event::KeyCode) -> io::Result<()> {
+        match key {
+            // Escape jumps back to filehost selector
+            KeyCode::Esc => {
+                self.current_widget = AppWidgets::FileSelector;
+                self.file_action.state.select(None);
+            }
+
+            KeyCode::Enter => {
+                match self.current_widget {
+                    // Enter in file selector triggers an action on the selected file
+                    AppWidgets::FileSelector => {
+                        self.current_widget = AppWidgets::FileAction;
+                        if self.file_action.state.selected() == None {
+                            self.file_action.state.select(Some(0));
+                        }
+                    }
+                    // Enter in action widget trigges an action on the prg
+                    AppWidgets::FileAction => {
+                        self.current_widget = AppWidgets::FileSelector;
+                        match self.file_action.state.selected() {
+                            Some(0) => self.files.run(false), // run
+                            Some(1) => self.files.run(true),  // reset, then run
+                            _ => Ok(()),
+                        };
+                        self.file_action.state.select(None);
+                    }
+                    _ => {}
+                }
+            }
+            _ => {}
+        }
         match self.current_widget {
             AppWidgets::FileAction => self.file_action.keypress(key),
             AppWidgets::FileSelector => self.files.keypress(key),
@@ -124,20 +155,10 @@ fn run_app<B: Backend>(terminal: &mut Terminal<B>, mut app: App) -> io::Result<(
                     app.add_message("Downloading and running...");
                     terminal.draw(|f| ui(f, &mut app))?;
                 }
-                KeyCode::Enter => match app.current_widget {
-                    AppWidgets::FileSelector => app.current_widget = AppWidgets::FileAction,
-                    AppWidgets::FileAction => app.current_widget = AppWidgets::FileSelector,
-                    _ => {}
-                },
                 _ => {}
             }
             app.keypress(key.code)?;
             app.ok_message();
-        }
-        match app.file_action.state.selected() {
-            Some(0) => {
-            }
-            _ => {}
         }
     }
 }

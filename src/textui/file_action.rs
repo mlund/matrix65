@@ -4,9 +4,8 @@ use std::io;
 
 use tui::{
     backend::Backend,
-    layout::Alignment,
     style::{Color, Modifier, Style},
-    text::{Span},
+    text::Span,
     widgets::{Block, BorderType, Borders, Clear, List, ListItem, ListState},
     Frame,
 };
@@ -18,11 +17,10 @@ pub struct StatefulList<T> {
 
 impl<T> StatefulList<T> {
     pub fn with_items(items: Vec<T>) -> StatefulList<T> {
-        let mut list = StatefulList {
+        let list = StatefulList {
             state: ListState::default(),
             items,
         };
-        list.state.select(Some(0));
         list
     }
 
