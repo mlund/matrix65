@@ -9,9 +9,7 @@ use tui::{
     layout::{Alignment, Constraint, Direction, Layout, Rect},
     style::{Color, Modifier, Style},
     text::{Span, Spans},
-    widgets::{
-        Block, BorderType, Borders, List, ListItem, Paragraph, Clear
-    },
+    widgets::{Block, BorderType, Borders, Clear, List, ListItem, Paragraph},
     Frame, Terminal,
 };
 
@@ -25,30 +23,37 @@ use file_selector::FilesApp;
 /// Specified the currently active widget of the TUI
 #[derive(PartialEq)]
 enum AppWidgets {
-    FileSelector, FileAction, Help,
+    FileSelector,
+    FileAction,
+    Help,
 }
 
-struct App<'a> {
+struct App {
     files: FilesApp,
     messages: Vec<String>,
     current_widget: AppWidgets,
-    file_action: file_action::StatefulList<&'a str>,
+    file_action: file_action::StatefulList<String>,
 }
 
-impl App<'_> {
-    fn new<'a >(port: &'a mut Box<dyn SerialPort>, filehost_items: &'a [filehost::Record]) -> App<'a> {
+impl App {
+    fn new(port: &mut Box<dyn SerialPort>, filehost_items: &[filehost::Record]) -> App {
         App {
             files: FilesApp::new(port, filehost_items),
             messages: vec!["Matrix65 welcomes you to the FileHost!".to_string()],
             current_widget: AppWidgets::FileSelector,
-            file_action: file_action::StatefulList::with_items(vec!["Run", "Reset and Run", "Cancel"])
+            file_action: file_action::StatefulList::with_items(vec![
+                "Run".to_string(),
+                "Reset and Run".to_string(),
+                "Cancel".to_string(),
+            ]),
         }
     }
 
     pub fn keypress(&mut self, key: crossterm::event::KeyCode) -> io::Result<()> {
         match self.current_widget {
+            AppWidgets::FileAction => self.file_action.keypress(key),
             AppWidgets::FileSelector => self.files.keypress(key),
-            _ => Ok(())
+            _ => Ok(()),
         }
     }
 
@@ -119,13 +124,20 @@ fn run_app<B: Backend>(terminal: &mut Terminal<B>, mut app: App) -> io::Result<(
                     app.add_message("Downloading and running...");
                     terminal.draw(|f| ui(f, &mut app))?;
                 }
-                KeyCode::Enter => {
-                    app.current_widget = AppWidgets::FileAction;
-                }
+                KeyCode::Enter => match app.current_widget {
+                    AppWidgets::FileSelector => app.current_widget = AppWidgets::FileAction,
+                    AppWidgets::FileAction => app.current_widget = AppWidgets::FileSelector,
+                    _ => {}
+                },
                 _ => {}
             }
             app.keypress(key.code)?;
             app.ok_message();
+        }
+        match app.file_action.state.selected() {
+            Some(0) => {
+            }
+            _ => {}
         }
     }
 }
@@ -155,8 +167,7 @@ fn ui<B: Backend>(f: &mut Frame<B>, app: &mut App) {
     }
 
     if app.current_widget == AppWidgets::FileAction {
-        file_action::render_prg_widget(f, &app.file_action.items);
-        app.current_widget = AppWidgets::FileSelector;
+        file_action::render_prg_widget(f, &mut app.file_action);
     }
 }
 
@@ -186,7 +197,7 @@ fn render_help_widget<B: Backend>(f: &mut Frame<B>) {
                 .add_modifier(Modifier::BOLD)
                 .fg(Color::White),
         ))
-        .style(Style::default().bg(Color::Red))
+        .style(Style::default().bg(Color::Blue))
         .borders(Borders::ALL)
         .border_type(BorderType::Rounded);
     let text = vec![

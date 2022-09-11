@@ -1,10 +1,13 @@
 use crate::textui::centered_rect;
+use crossterm::event::KeyCode;
+use std::io;
+
 use tui::{
     backend::Backend,
     layout::Alignment,
     style::{Color, Modifier, Style},
-    text::{Span, Spans},
-    widgets::{Block, BorderType, Borders, Clear, List, ListItem, ListState, Paragraph},
+    text::{Span},
+    widgets::{Block, BorderType, Borders, Clear, List, ListItem, ListState},
     Frame,
 };
 
@@ -15,10 +18,12 @@ pub struct StatefulList<T> {
 
 impl<T> StatefulList<T> {
     pub fn with_items(items: Vec<T>) -> StatefulList<T> {
-        StatefulList {
+        let mut list = StatefulList {
             state: ListState::default(),
             items,
-        }
+        };
+        list.state.select(Some(0));
+        list
     }
 
     fn next(&mut self) {
@@ -49,25 +54,22 @@ impl<T> StatefulList<T> {
         self.state.select(Some(i));
     }
 
-    fn unselect(&mut self) {
+    fn _unselect(&mut self) {
         self.state.select(None);
+    }
+
+    pub fn keypress(&mut self, key: crossterm::event::KeyCode) -> io::Result<()> {
+        match key {
+            KeyCode::Down => self.next(),
+            KeyCode::Up => self.previous(),
+            _ => {}
+        }
+        Ok(())
     }
 }
 
-// pub fn keypress(&key: crossterm::event::KeyCode) -> io::Result<()> {
-//     match key {
-//         KeyCode::Down => self.next(),
-//         KeyCode::Up => self.previous(),
-//         KeyCode::Char('r') => self.run(false)?,
-//         KeyCode::Char('R') => self.run(true)?,
-//         KeyCode::Char('s') => self.sort_filehost(),
-//         _ => { }
-//     }
-//     Ok(())
-// }
-
 /// Handles actions on selected files, e.g running, downloading, etc.
-pub fn render_prg_widget<B: Backend>(f: &mut Frame<B>, items_str: &[&str]) {
+pub fn render_prg_widget<B: Backend>(f: &mut Frame<B>, action_list: &mut StatefulList<String>) {
     let area = centered_rect(15, 15, f.size());
     let block = Block::default()
         .title(Span::styled(
@@ -76,17 +78,24 @@ pub fn render_prg_widget<B: Backend>(f: &mut Frame<B>, items_str: &[&str]) {
                 .add_modifier(Modifier::BOLD)
                 .fg(Color::White),
         ))
-        .style(Style::default().bg(Color::Red))
+        .style(Style::default().bg(Color::Blue))
         .borders(Borders::ALL)
         .border_type(BorderType::Rounded);
 
-    let items: Vec<ListItem> = items_str.iter().map(|i| ListItem::new(*i)).collect();
-    let action_list = List::new(items).block(block).highlight_style(
-        Style::default()
-            .bg(Color::LightGreen)
-            .add_modifier(Modifier::BOLD),
-    );
+    let items: Vec<ListItem> = action_list
+        .items
+        .iter()
+        .map(|i| ListItem::new(i.as_str()))
+        .collect();
+    let list = List::new(items)
+        .block(block)
+        .highlight_style(
+            Style::default()
+                .bg(Color::DarkGray)
+                .add_modifier(Modifier::BOLD),
+        )
+        .highlight_symbol("*");
 
     f.render_widget(Clear, area);
-    f.render_widget(action_list, area);
+    f.render_stateful_widget(list, area, &mut action_list.state);
 }

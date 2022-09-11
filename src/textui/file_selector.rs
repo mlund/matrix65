@@ -1,15 +1,13 @@
-use serialport::SerialPort;
-use crossterm::event::KeyCode;
 use crate::filehost;
 use crate::serial;
+use crossterm::event::KeyCode;
+use serialport::SerialPort;
 use std::io;
 use tui::{
     layout::{Alignment, Constraint},
-    style::{Modifier, Style, Color},
+    style::{Color, Modifier, Style},
     text::{Span, Spans},
-    widgets::{
-        Block, BorderType, Borders, Paragraph, Table, TableState, Cell, Row
-    },
+    widgets::{Block, BorderType, Borders, Cell, Paragraph, Row, Table, TableState},
 };
 
 pub struct FilesApp {
@@ -36,7 +34,7 @@ impl FilesApp {
             KeyCode::Char('r') => self.run(false)?,
             KeyCode::Char('R') => self.run(true)?,
             KeyCode::Char('s') => self.sort_filehost(),
-            _ => { }
+            _ => {}
         }
         Ok(())
     }
