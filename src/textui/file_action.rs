@@ -17,11 +17,10 @@ pub struct StatefulList<T> {
 
 impl<T> StatefulList<T> {
     pub fn with_items(items: Vec<T>) -> StatefulList<T> {
-        let list = StatefulList {
+        StatefulList {
             state: ListState::default(),
             items,
-        };
-        list
+        }
     }
 
     fn next(&mut self) {
@@ -52,7 +51,11 @@ impl<T> StatefulList<T> {
         self.state.select(Some(i));
     }
 
-    fn _unselect(&mut self) {
+    pub fn is_selected(&self) -> bool {
+        self.state.selected() != None
+    }
+
+    pub fn unselect(&mut self) {
         self.state.select(None);
     }
 
@@ -67,7 +70,15 @@ impl<T> StatefulList<T> {
 }
 
 /// Handles actions on selected files, e.g running, downloading, etc.
-pub fn render_prg_widget<B: Backend>(f: &mut Frame<B>, action_list: &mut StatefulList<String>) {
+pub fn render_prg_widget<B: Backend>(
+    f: &mut Frame<B>,
+    action_list: &mut StatefulList<String>,
+    busy: bool,
+) {
+    let background_color = match busy {
+        true => Color::DarkGray,
+        false => Color::Blue,
+    };
     let area = centered_rect(15, 15, f.size());
     let block = Block::default()
         .title(Span::styled(
@@ -76,7 +87,7 @@ pub fn render_prg_widget<B: Backend>(f: &mut Frame<B>, action_list: &mut Statefu
                 .add_modifier(Modifier::BOLD)
                 .fg(Color::White),
         ))
-        .style(Style::default().bg(Color::Blue))
+        .style(Style::default().bg(background_color))
         .borders(Borders::ALL)
         .border_type(BorderType::Rounded);
 

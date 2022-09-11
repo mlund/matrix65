@@ -33,6 +33,7 @@ struct App {
     messages: Vec<String>,
     current_widget: AppWidgets,
     file_action: file_action::StatefulList<String>,
+    busy: bool,
 }
 
 impl App {
@@ -46,15 +47,28 @@ impl App {
                 "Reset and Run".to_string(),
                 "Cancel".to_string(),
             ]),
+            busy: false,
         }
+    }
+
+    pub fn set_current_widget(&mut self, widget: AppWidgets) {
+        self.current_widget = widget;
     }
 
     pub fn keypress(&mut self, key: crossterm::event::KeyCode) -> io::Result<()> {
         match key {
+            KeyCode::Char('h') => {
+                if self.current_widget != AppWidgets::Help {
+                    self.set_current_widget(AppWidgets::Help);
+                } else {
+                    self.set_current_widget(AppWidgets::FileSelector);
+                }
+            }
+
             // Escape jumps back to filehost selector
             KeyCode::Esc => {
-                self.current_widget = AppWidgets::FileSelector;
-                self.file_action.state.select(None);
+                self.set_current_widget(AppWidgets::FileSelector);
+                self.file_action.unselect();
             }
 
             KeyCode::Enter => {
@@ -62,19 +76,19 @@ impl App {
                     // Enter in file selector triggers an action on the selected file
                     AppWidgets::FileSelector => {
                         self.current_widget = AppWidgets::FileAction;
-                        if self.file_action.state.selected() == None {
+                        if !self.file_action.is_selected() {
                             self.file_action.state.select(Some(0));
                         }
                     }
                     // Enter in action widget trigges an action on the prg
                     AppWidgets::FileAction => {
-                        self.current_widget = AppWidgets::FileSelector;
+                        self.set_current_widget(AppWidgets::FileSelector);
                         match self.file_action.state.selected() {
                             Some(0) => self.files.run(false), // run
                             Some(1) => self.files.run(true),  // reset, then run
                             _ => Ok(()),
-                        };
-                        self.file_action.state.select(None);
+                        }?;
+                        self.file_action.unselect();
                     }
                     _ => {}
                 }
@@ -96,7 +110,7 @@ impl App {
         }
     }
 
-    pub fn add_message(&mut self, message: &str) {
+    pub fn _add_message(&mut self, message: &str) {
         self.messages.push(message.to_string());
     }
 
@@ -133,7 +147,6 @@ pub fn start_tui(
     if let Err(err) = res {
         println!("{:?}", err)
     }
-
     Ok(())
 }
 
@@ -144,16 +157,13 @@ fn run_app<B: Backend>(terminal: &mut Terminal<B>, mut app: App) -> io::Result<(
         if let Event::Key(key) = event::read()? {
             match key.code {
                 KeyCode::Char('q') => return Ok(()),
-                KeyCode::Char('h') => {
-                    if app.current_widget != AppWidgets::Help {
-                        app.current_widget = AppWidgets::Help;
+                KeyCode::Enter => {
+                    if app.file_action.is_selected() {
+                        app.busy = true;
+                        terminal.draw(|f| ui(f, &mut app))?;
                     } else {
-                        app.current_widget = AppWidgets::FileSelector;
+                        app.busy = false;
                     }
-                }
-                KeyCode::Char('r') | KeyCode::Char('R') => {
-                    app.add_message("Downloading and running...");
-                    terminal.draw(|f| ui(f, &mut app))?;
                 }
                 _ => {}
             }
@@ -188,7 +198,7 @@ fn ui<B: Backend>(f: &mut Frame<B>, app: &mut App) {
     }
 
     if app.current_widget == AppWidgets::FileAction {
-        file_action::render_prg_widget(f, &mut app.file_action);
+        file_action::render_prg_widget(f, &mut app.file_action, app.busy);
     }
 }
 
