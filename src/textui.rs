@@ -177,14 +177,11 @@ fn run_app<B: Backend>(terminal: &mut Terminal<B>, mut app: App) -> io::Result<(
 
         if let Event::Key(key) = event::read()? {
             match key.code {
+                KeyCode::Char('q') => return Ok(()),
                 KeyCode::Char('r') | KeyCode::Char('R') => {
                     app.add_message("Downloading and running...");
                     terminal.draw(|f| ui(f, &mut app))?;
                 }
-                _ => {}
-            }
-            match key.code {
-                KeyCode::Char('q') => return Ok(()),
                 _ => {}
             }
             app.keypress(key.code)?;
