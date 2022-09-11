@@ -35,6 +35,19 @@ impl FilesApp {
             toggle_sort: false,
         }
     }
+
+    fn keypress(&mut self, key: crossterm::event::KeyCode) -> io::Result<()> {
+        match key {
+            KeyCode::Down => self.next(),
+            KeyCode::Up => self.previous(),
+            KeyCode::Char('r') => self.run(false)?,
+            KeyCode::Char('R') => self.run(true)?,
+            KeyCode::Char('s') => self.sort_filehost(),
+            _ => { }
+        }
+        Ok(())
+    }
+
     pub fn next(&mut self) {
         let i = match self.state.selected() {
             Some(i) => {
@@ -105,6 +118,11 @@ impl App {
         }
     }
 
+    pub fn keypress(&mut self, key: crossterm::event::KeyCode) -> io::Result<()> {
+        self.files.keypress(key)
+    }
+
+    /// Set OK message if previous message is something else
     pub fn ok_message(&mut self) {
         let ok_text = "Ready".to_string();
         if *self.messages.last().unwrap() != ok_text {
@@ -167,14 +185,9 @@ fn run_app<B: Backend>(terminal: &mut Terminal<B>, mut app: App) -> io::Result<(
             }
             match key.code {
                 KeyCode::Char('q') => return Ok(()),
-                KeyCode::Down => app.files.next(),
-                KeyCode::Up => app.files.previous(),
-                KeyCode::Char('h') | KeyCode::Enter => app.show_help = !app.show_help,
-                KeyCode::Char('r') => app.files.run(false)?,
-                KeyCode::Char('R') => app.files.run(true)?,
-                KeyCode::Char('s') => app.files.sort_filehost(),
                 _ => {}
             }
+            app.keypress(key.code)?;
             app.ok_message();
         }
     }
