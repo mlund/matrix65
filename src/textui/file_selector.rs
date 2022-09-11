@@ -4,11 +4,11 @@ use crate::filehost;
 use crate::serial;
 use std::io;
 use tui::{
-    layout::{Alignment},
-    style::{Modifier, Style},
+    layout::{Alignment, Constraint},
+    style::{Modifier, Style, Color},
     text::{Span, Spans},
     widgets::{
-        Block, BorderType, Borders, Paragraph, TableState,
+        Block, BorderType, Borders, Paragraph, Table, TableState, Cell, Row
     },
 };
 
@@ -117,4 +117,46 @@ impl FilesApp {
             .block(block)
             .alignment(Alignment::Left)
     }
+}
+
+pub fn make_files_widget(filehost_items: &[filehost::Record]) -> Table {
+    let selected_style = Style::default().add_modifier(Modifier::REVERSED);
+    let normal_style = Style::default().bg(Color::Blue);
+    let header_cells = ["Title", "Type", "Author"]
+        .iter()
+        .map(|h| Cell::from(*h).style(Style::default().fg(Color::Yellow)));
+    let header = Row::new(header_cells)
+        .style(normal_style)
+        .height(1)
+        .bottom_margin(0);
+    let rows = filehost_items.iter().map(|item| {
+        let col_data = item.columns();
+        let height = col_data
+            .iter()
+            .map(|content| content.chars().filter(|c| *c == '\n').count())
+            .max()
+            .unwrap_or(0)
+            + 1;
+        let cells = col_data.iter().map(|c| Cell::from(*c));
+        Row::new(cells).height(height as u16).bottom_margin(0)
+    });
+    let table = Table::new(rows)
+        .header(header)
+        .block(
+            Block::default()
+                .borders(Borders::ALL)
+                .border_type(BorderType::Rounded)
+                .title(Span::styled(
+                    "🌈 Filehost entries",
+                    Style::default().add_modifier(Modifier::BOLD),
+                )),
+        )
+        .highlight_style(selected_style)
+        .highlight_symbol("")
+        .widths(&[
+            Constraint::Percentage(50),
+            Constraint::Percentage(25),
+            Constraint::Percentage(25),
+        ]);
+    table
 }

@@ -10,7 +10,7 @@ use tui::{
     style::{Color, Modifier, Style},
     text::{Span, Spans},
     widgets::{
-        Block, BorderType, Borders, Cell, Clear, List, ListItem, Paragraph, Row, Table,
+        Block, BorderType, Borders, List, ListItem, Paragraph, Clear
     },
     Frame, Terminal,
 };
@@ -22,23 +22,32 @@ mod file_action;
 mod file_selector;
 use file_selector::FilesApp;
 
+/// Specified the currently active widget of the TUI
+#[derive(PartialEq)]
+enum AppWidgets {
+    FileSelector, FileAction, Help,
+}
+
 struct App {
     files: FilesApp,
-    show_help: bool,
     messages: Vec<String>,
+    current_widget: AppWidgets,
 }
 
 impl App {
     fn new(port: &mut Box<dyn SerialPort>, filehost_items: &[filehost::Record]) -> App {
         App {
             files: FilesApp::new(port, filehost_items),
-            show_help: false,
             messages: vec!["Matrix65 welcomes you to the FileHost!".to_string()],
+            current_widget: AppWidgets::FileSelector,
         }
     }
 
     pub fn keypress(&mut self, key: crossterm::event::KeyCode) -> io::Result<()> {
-        self.files.keypress(key)
+        match self.current_widget {
+            AppWidgets::FileSelector => self.files.keypress(key),
+            _ => Ok(())
+        }
     }
 
     /// Set OK message if previous message is something else
@@ -97,9 +106,18 @@ fn run_app<B: Backend>(terminal: &mut Terminal<B>, mut app: App) -> io::Result<(
         if let Event::Key(key) = event::read()? {
             match key.code {
                 KeyCode::Char('q') => return Ok(()),
+                KeyCode::Char('h') => {
+                    if app.current_widget != AppWidgets::Help {
+                        app.current_widget = AppWidgets::Help;
+                    } else {
+                        app.current_widget = AppWidgets::FileSelector;
+                    }
+                }
                 KeyCode::Char('r') | KeyCode::Char('R') => {
                     app.add_message("Downloading and running...");
                     terminal.draw(|f| ui(f, &mut app))?;
+                }
+                KeyCode::Enter => {
                 }
                 _ => {}
             }
@@ -115,7 +133,7 @@ fn ui<B: Backend>(f: &mut Frame<B>, app: &mut App) {
         .constraints([Constraint::Min(4), Constraint::Length(8)].as_ref())
         .split(f.size());
 
-    let files_widget = make_files_widget(&app.files.items);
+    let files_widget = file_selector::make_files_widget(&app.files.items);
     f.render_stateful_widget(files_widget, chunks[0], &mut app.files.state);
 
     let chunks = Layout::default()
@@ -129,7 +147,7 @@ fn ui<B: Backend>(f: &mut Frame<B>, app: &mut App) {
     let messages_widget = make_messages_widget(&app.messages);
     f.render_widget(messages_widget, chunks[1]);
 
-    if app.show_help {
+    if app.current_widget == AppWidgets::Help {
         render_help_widget(f);
     }
 }
@@ -149,48 +167,6 @@ fn make_messages_widget(app_messages: &[String]) -> List {
         "Messages",
         Style::default().add_modifier(Modifier::BOLD),
     )))
-}
-
-fn make_files_widget(filehost_items: &[filehost::Record]) -> Table {
-    let selected_style = Style::default().add_modifier(Modifier::REVERSED);
-    let normal_style = Style::default().bg(Color::Blue);
-    let header_cells = ["Title", "Type", "Author"]
-        .iter()
-        .map(|h| Cell::from(*h).style(Style::default().fg(Color::Yellow)));
-    let header = Row::new(header_cells)
-        .style(normal_style)
-        .height(1)
-        .bottom_margin(0);
-    let rows = filehost_items.iter().map(|item| {
-        let col_data = item.columns();
-        let height = col_data
-            .iter()
-            .map(|content| content.chars().filter(|c| *c == '\n').count())
-            .max()
-            .unwrap_or(0)
-            + 1;
-        let cells = col_data.iter().map(|c| Cell::from(*c));
-        Row::new(cells).height(height as u16).bottom_margin(0)
-    });
-    let table = Table::new(rows)
-        .header(header)
-        .block(
-            Block::default()
-                .borders(Borders::ALL)
-                .border_type(BorderType::Rounded)
-                .title(Span::styled(
-                    "🌈 Filehost entries",
-                    Style::default().add_modifier(Modifier::BOLD),
-                )),
-        )
-        .highlight_style(selected_style)
-        .highlight_symbol("")
-        .widths(&[
-            Constraint::Percentage(50),
-            Constraint::Percentage(25),
-            Constraint::Percentage(25),
-        ]);
-    table
 }
 
 fn render_help_widget<B: Backend>(f: &mut Frame<B>) {
