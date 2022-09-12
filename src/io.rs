@@ -13,25 +13,18 @@
 // limitations under the license.
 
 /// Routines related to file/url/terminal I/O
- 
 use cbm::disk;
 use cbm::disk::file::FileOps;
 use log::info;
 use std::fs::File;
-use std::io::{self, Read, Write};
+use std::io::{self, Error, ErrorKind, Read, Write};
 use tempfile::Builder;
 
 /// Fill byte vector from url with compatible error
 fn load_bytes_url(url: &str) -> std::io::Result<Vec<u8>> {
-    let request = match reqwest::blocking::get(url) {
-        Ok(req) => req,
-        Err(err) => {
-            // @todo using unstable, this may be replaced with Error::other()
-            let error = std::io::Error::new(std::io::ErrorKind::Other, err.to_string());
-            return Err(error);
-        },
-    };
-    Ok(request.bytes().unwrap().to_vec())
+    let convert_error = |err: reqwest::Error| Error::new(ErrorKind::Other, err.to_string());
+    let bytes = reqwest::blocking::get(url).map_err(convert_error)?.bytes().unwrap().to_vec();
+    Ok(bytes)
 }
 
 /// Load file or url into byte vector
@@ -115,7 +108,10 @@ fn cbm_select_and_load(diskimage: &str) -> std::io::Result<(u16, Vec<u8>)> {
         .trim_end()
         .parse::<usize>()
         .expect("invalid index selection");
-    let entry = prg_files.nth(index).expect("invalid file");
+
+    let invalid_selection_error = Error::new(ErrorKind::Other, "invalid selection");
+    let entry = prg_files.nth(index).ok_or(invalid_selection_error)?;
+
     let mut bytes = Vec::<u8>::new();
     disk.open_file(&entry.filename)?
         .reader()?
