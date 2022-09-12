@@ -74,7 +74,7 @@ fn cbm_open(diskimage: &str) -> std::io::Result<Box<dyn cbm::disk::Disk>> {
     if diskimage.starts_with("http") {
         let tmp_dir = Builder::new().tempdir()?;
         let path = tmp_dir.path().join("temp-image");
-        let filename = path.to_str().unwrap();
+        let filename = path.to_str().unwrap_or("");
         let bytes = reqwest::blocking::get(diskimage)
             .unwrap()
             .bytes()
