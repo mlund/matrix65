@@ -41,9 +41,9 @@ fn start_cpu(port: &mut Box<dyn SerialPort>) -> std::io::Result<()> {
 }
 
 /// Detect if in C65 mode
-pub fn is_c65_mode(port: &mut Box<dyn SerialPort>) -> bool {
-    let byte = read_memory(port, 0xffd3030, 1).unwrap()[0];
-    byte == 0x64
+pub fn is_c65_mode(port: &mut Box<dyn SerialPort>) -> std::io::Result<bool> {
+    let byte = read_memory(port, 0xffd3030, 1)?[0];
+    Ok(byte == 0x64)
 }
 
 /// Print available serial ports
@@ -83,7 +83,7 @@ pub fn reset(port: &mut Box<dyn SerialPort>) -> Result<(), std::io::Error> {
 /// If not already there, go to C64 mode via key presses
 pub fn go64(port: &mut Box<dyn SerialPort>) -> Result<(), std::io::Error> {
     info!("Sending GO64");
-    if is_c65_mode(port) {
+    if is_c65_mode(port)? {
         type_text(port, "go64\ry\r")?;
         thread::sleep(Duration::from_secs(1));
     }
@@ -92,7 +92,7 @@ pub fn go64(port: &mut Box<dyn SerialPort>) -> Result<(), std::io::Error> {
 
 /// If not already there, go to C65 mode via a reset
 pub fn go65(port: &mut Box<dyn SerialPort>) -> Result<(), std::io::Error> {
-    match is_c65_mode(port) {
+    match is_c65_mode(port)? {
         true => Ok(()),
         false => reset(port),
     }
@@ -240,7 +240,7 @@ pub fn type_text(port: &mut Box<dyn SerialPort>, text: &str) -> std::io::Result<
     text.replace("\\r", "\r")
         .replace("\\n", "\r")
         .chars()
-        .for_each(|key| type_key(port, key).unwrap());
+        .for_each(|key| type_key(port, key).unwrap_or(()));
     stop_typing(port)?;
     Ok(())
 }
