@@ -19,13 +19,15 @@ use serialport::SerialPort;
 use std::thread;
 use std::time::Duration;
 
+use anyhow::Result;
+
 /// Delay after writing to serial port
 const DELAY_WRITE: Duration = Duration::from_millis(20);
 /// Delay between sending key presses
 const DELAY_KEYPRESS: Duration = DELAY_WRITE;
 
 /// Stop the MEGA65 CPU
-fn stop_cpu(port: &mut Box<dyn SerialPort>) -> std::io::Result<()> {
+fn stop_cpu(port: &mut Box<dyn SerialPort>) -> Result<()> {
     port.write_all("t1\r".as_bytes())?;
     port.flush()?;
     thread::sleep(DELAY_WRITE);
@@ -33,7 +35,7 @@ fn stop_cpu(port: &mut Box<dyn SerialPort>) -> std::io::Result<()> {
 }
 
 /// Start the MEGA65 CPU after being halted
-fn start_cpu(port: &mut Box<dyn SerialPort>) -> std::io::Result<()> {
+fn start_cpu(port: &mut Box<dyn SerialPort>) -> Result<()> {
     port.write_all("t0\r".as_bytes())?;
     port.flush()?;
     thread::sleep(DELAY_WRITE);
@@ -41,7 +43,7 @@ fn start_cpu(port: &mut Box<dyn SerialPort>) -> std::io::Result<()> {
 }
 
 /// Detect if in C65 mode
-pub fn is_c65_mode(port: &mut Box<dyn SerialPort>) -> std::io::Result<bool> {
+pub fn is_c65_mode(port: &mut Box<dyn SerialPort>) -> Result<bool> {
     let byte = read_memory(port, 0xffd3030, 1)?[0];
     Ok(byte == 0x64)
 }
@@ -57,7 +59,7 @@ pub fn print_ports() {
 }
 
 /// Open serial port - show available ports and stop if invalid
-pub fn open_port(name: &str, baud_rate: u32) -> Result<Box<dyn SerialPort>, serialport::Error> {
+pub fn open_port(name: &str, baud_rate: u32) -> Result<Box<dyn SerialPort>> {
     debug!("Opening serial port {}", name);
     match serialport::new(name, baud_rate)
         .timeout(Duration::from_millis(10))
@@ -67,13 +69,13 @@ pub fn open_port(name: &str, baud_rate: u32) -> Result<Box<dyn SerialPort>, seri
         Err(err) => {
             eprintln!("Invalid serial port, try one of these?\n");
             print_ports();
-            Err(err)
+            Err(err.into())
         }
     }
 }
 
 /// Reset the MEGA65
-pub fn reset(port: &mut Box<dyn SerialPort>) -> Result<(), std::io::Error> {
+pub fn reset(port: &mut Box<dyn SerialPort>) -> Result<()> {
     info!("Sending RESET signal");
     port.write_all("!\n".as_bytes())?;
     thread::sleep(Duration::from_secs(4));
@@ -81,7 +83,7 @@ pub fn reset(port: &mut Box<dyn SerialPort>) -> Result<(), std::io::Error> {
 }
 
 /// If not already there, go to C64 mode via key presses
-pub fn go64(port: &mut Box<dyn SerialPort>) -> Result<(), std::io::Error> {
+pub fn go64(port: &mut Box<dyn SerialPort>) -> Result<()> {
     info!("Sending GO64");
     if is_c65_mode(port)? {
         type_text(port, "go64\ry\r")?;
@@ -91,7 +93,7 @@ pub fn go64(port: &mut Box<dyn SerialPort>) -> Result<(), std::io::Error> {
 }
 
 /// If not already there, go to C65 mode via a reset
-pub fn go65(port: &mut Box<dyn SerialPort>) -> Result<(), std::io::Error> {
+pub fn go65(port: &mut Box<dyn SerialPort>) -> Result<()> {
     match is_c65_mode(port)? {
         true => Ok(()),
         false => reset(port),
@@ -99,7 +101,7 @@ pub fn go65(port: &mut Box<dyn SerialPort>) -> Result<(), std::io::Error> {
 }
 
 /// Translate and type a single letter on MEGA65
-fn type_key(port: &mut Box<dyn SerialPort>, mut key: char) -> std::io::Result<()> {
+fn type_key(port: &mut Box<dyn SerialPort>, mut key: char) -> Result<()> {
     let mut c1: u8 = 0x7f;
     let mut c2 = match key {
         '!' => {
@@ -225,14 +227,14 @@ fn type_key(port: &mut Box<dyn SerialPort>, mut key: char) -> std::io::Result<()
 }
 
 /// Call this when done typing
-fn stop_typing(port: &mut Box<dyn SerialPort>) -> std::io::Result<()> {
+fn stop_typing(port: &mut Box<dyn SerialPort>) -> Result<()> {
     port.write_all("sffd3615 7f 7f 7f \n".as_bytes())?;
     thread::sleep(DELAY_WRITE);
     Ok(())
 }
 
 /// Send array of key presses
-pub fn type_text(port: &mut Box<dyn SerialPort>, text: &str) -> std::io::Result<()> {
+pub fn type_text(port: &mut Box<dyn SerialPort>, text: &str) -> Result<()> {
     // Manually translate user defined escape codes:
     // https://stackoverflow.com/questions/72583983/interpreting-escape-characters-in-a-string-read-from-user-input
     debug!("Typing text");
@@ -247,7 +249,7 @@ pub fn type_text(port: &mut Box<dyn SerialPort>, text: &str) -> std::io::Result<
 
 /// Get MEGA65 info (@todo under construction)
 #[allow(dead_code)]
-pub fn mega65_info(port: &mut Box<dyn SerialPort>) -> std::io::Result<()> {
+pub fn mega65_info(port: &mut Box<dyn SerialPort>) -> Result<()> {
     debug!("Requesting serial monitor info");
     port.write_all("h\n".as_bytes())?;
     thread::sleep(DELAY_WRITE);
@@ -266,11 +268,7 @@ pub fn mega65_info(port: &mut Box<dyn SerialPort>) -> std::io::Result<()> {
 }
 
 /// Load memory from MEGA65 starting at given address
-pub fn read_memory(
-    port: &mut Box<dyn SerialPort>,
-    address: u32,
-    length: usize,
-) -> Result<Vec<u8>, std::io::Error> {
+pub fn read_memory(port: &mut Box<dyn SerialPort>, address: u32, length: usize) -> Result<Vec<u8>> {
     info!("Loading {} bytes from 0x{:x}", length, address);
     flush_monitor(port)?;
     stop_cpu(port)?;
@@ -291,7 +289,7 @@ pub fn read_memory(
         buffer.resize(16 * 2, 0);
         port.read_exact(&mut buffer)?;
         // convert two-letter codes to bytes
-        let mut sixteen_bytes: Vec<u8> = Vec::from_hex(&buffer).expect("invalid hex");
+        let mut sixteen_bytes: Vec<u8> = Vec::from_hex(&buffer)?;
         bytes.append(&mut sixteen_bytes);
         // trigger next memory dump and ignore header
         port.write_all("m\r".as_bytes())?;
@@ -307,7 +305,7 @@ pub fn read_memory(
 /// Try to empty the monitor by reading one byte until nothing more can be read
 ///
 /// There must be more elegant ways to do this...
-fn flush_monitor(port: &mut Box<dyn SerialPort>) -> std::io::Result<()> {
+fn flush_monitor(port: &mut Box<dyn SerialPort>) -> Result<()> {
     port.write_all(&[0x15, b'#', b'\r'])?;
     let mut byte = [0u8];
     loop {
@@ -321,11 +319,7 @@ fn flush_monitor(port: &mut Box<dyn SerialPort>) -> std::io::Result<()> {
 }
 
 /// Write bytes to MEGA65 at 200 kB/s at default baud rate
-pub fn write_memory(
-    port: &mut Box<dyn SerialPort>,
-    address: u16,
-    bytes: &[u8],
-) -> std::io::Result<()> {
+pub fn write_memory(port: &mut Box<dyn SerialPort>, address: u16, bytes: &[u8]) -> Result<()> {
     info!("Writing {} bytes to address 0x{:x}", bytes.len(), address);
     stop_cpu(port)?;
     port.write_all(format!("l{:x} {:x}\r", address, address + bytes.len() as u16).as_bytes())?;
@@ -345,7 +339,7 @@ pub fn handle_prg(
     file: &str,
     reset_before_run: bool,
     run: bool,
-) -> std::io::Result<()> {
+) -> Result<()> {
     let (load_address, bytes) = io::load_prg(file)?;
     if reset_before_run {
         reset(port)?;

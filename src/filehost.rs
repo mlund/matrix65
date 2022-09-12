@@ -1,3 +1,4 @@
+use anyhow::Result;
 use serde::{Deserialize, Serialize};
 
 /// Record for an entry on the MEGA65 FileHost website
@@ -32,7 +33,7 @@ impl Record {
 }
 
 /// Get list of records from the filehost
-pub fn get_file_list() -> Result<Vec<Record>, Box<dyn std::error::Error>> {
+pub fn get_file_list() -> Result<Vec<Record>> {
     let url = "https://files.mega65.org/php/readfilespublic.php";
     let body = reqwest::blocking::get(url)?.text()?;
     Ok(serde_json::from_str(&body)?)

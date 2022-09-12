@@ -1,6 +1,7 @@
 use crate::textui::centered_rect;
 use crossterm::event::KeyCode;
-use std::io;
+
+use anyhow::Result;
 
 use tui::{
     backend::Backend,
@@ -59,7 +60,7 @@ impl<T> StatefulList<T> {
         self.state.select(None);
     }
 
-    pub fn keypress(&mut self, key: crossterm::event::KeyCode) -> io::Result<()> {
+    pub fn keypress(&mut self, key: crossterm::event::KeyCode) -> Result<()> {
         match key {
             KeyCode::Down => self.next(),
             KeyCode::Up => self.previous(),

@@ -3,7 +3,10 @@ use crossterm::{
     execute,
     terminal::{disable_raw_mode, enable_raw_mode, EnterAlternateScreen, LeaveAlternateScreen},
 };
-use std::{error::Error, io};
+
+use std::io;
+
+use anyhow::Result;
 use tui::{
     backend::{Backend, CrosstermBackend},
     layout::{Alignment, Constraint, Direction, Layout, Rect},
@@ -55,7 +58,7 @@ impl App {
         self.current_widget = widget;
     }
 
-    pub fn keypress(&mut self, key: crossterm::event::KeyCode) -> io::Result<()> {
+    pub fn keypress(&mut self, key: crossterm::event::KeyCode) -> Result<()> {
         match key {
             KeyCode::Char('h') => {
                 if self.current_widget != AppWidgets::Help {
@@ -123,7 +126,7 @@ impl App {
 pub fn start_tui(
     port: &mut Box<dyn SerialPort>,
     filehost_items: &[filehost::Record],
-) -> Result<(), Box<dyn Error>> {
+) -> Result<()> {
     // setup terminal
     enable_raw_mode()?;
     let mut stdout = io::stdout();
@@ -150,7 +153,7 @@ pub fn start_tui(
     Ok(())
 }
 
-fn run_app<B: Backend>(terminal: &mut Terminal<B>, mut app: App) -> io::Result<()> {
+fn run_app<B: Backend>(terminal: &mut Terminal<B>, mut app: App) -> Result<()> {
     loop {
         terminal.draw(|f| ui(f, &mut app))?;
 

@@ -14,13 +14,15 @@
 
 use clap::Parser;
 use parse_int::parse;
-use std::error::Error;
+//use std::error::Error;
 
 mod filehost;
 mod input;
 mod io;
 mod serial;
 mod textui;
+
+use anyhow::Result;
 
 fn main() {
     if let Err(err) = do_main() {
@@ -29,7 +31,7 @@ fn main() {
     }
 }
 
-fn do_main() -> Result<(), Box<dyn Error>> {
+fn do_main() -> Result<()> {
     pretty_env_logger::init();
     let args = input::Args::parse();
     let mut port = serial::open_port(&args.port, args.baud)?;

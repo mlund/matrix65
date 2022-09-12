@@ -2,13 +2,14 @@ use crate::filehost;
 use crate::serial;
 use crossterm::event::KeyCode;
 use serialport::SerialPort;
-use std::io;
 use tui::{
     layout::{Alignment, Constraint},
     style::{Color, Modifier, Style},
     text::{Span, Spans},
     widgets::{Block, BorderType, Borders, Cell, Paragraph, Row, Table, TableState},
 };
+
+use anyhow::Result;
 
 pub struct FilesApp {
     pub state: TableState,
@@ -27,7 +28,7 @@ impl FilesApp {
         }
     }
 
-    pub fn keypress(&mut self, key: crossterm::event::KeyCode) -> io::Result<()> {
+    pub fn keypress(&mut self, key: crossterm::event::KeyCode) -> Result<()> {
         match key {
             KeyCode::Down => self.next(),
             KeyCode::Up => self.previous(),
@@ -85,7 +86,7 @@ impl FilesApp {
     }
 
     /// Transfer and run selected file
-    pub fn run(&mut self, reset_before_run: bool) -> std::io::Result<()> {
+    pub fn run(&mut self, reset_before_run: bool) -> Result<()> {
         let url = self.selected_url();
         match url.ends_with(".prg") {
             true => serial::handle_prg(&mut self.port, &url, reset_before_run, true),

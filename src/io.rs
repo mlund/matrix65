@@ -17,18 +17,18 @@ use cbm::disk;
 use cbm::disk::file::FileOps;
 use log::info;
 use std::fs::File;
-use std::io::{self, Error, ErrorKind, Read, Write};
+use std::io::{self, Read, Write};
 use tempfile::Builder;
 
+use anyhow::Result;
+
 /// Fill byte vector from url with compatible error
-fn load_bytes_url(url: &str) -> std::io::Result<Vec<u8>> {
-    let convert_error = |err: reqwest::Error| Error::new(ErrorKind::Other, err.to_string());
-    let bytes = reqwest::blocking::get(url).map_err(convert_error)?.bytes().unwrap().to_vec();
-    Ok(bytes)
+fn load_bytes_url(url: &str) -> Result<Vec<u8>> {
+    Ok(reqwest::blocking::get(url)?.bytes()?.to_vec())
 }
 
 /// Load file or url into byte vector
-fn load_bytes(filename: &str) -> std::io::Result<Vec<u8>> {
+fn load_bytes(filename: &str) -> Result<Vec<u8>> {
     let mut bytes = Vec::new();
     if filename.starts_with("http") {
         bytes = load_bytes_url(filename)?;
@@ -43,17 +43,13 @@ fn load_bytes(filename: &str) -> std::io::Result<Vec<u8>> {
 ///
 /// If an archive (.d64|.d81) is detected, the user is presented with a selection
 /// of found PRG files. Returns intended load address and raw bytes.
-pub fn load_prg(file: &str) -> std::io::Result<(u16, Vec<u8>)> {
+pub fn load_prg(file: &str) -> Result<(u16, Vec<u8>)> {
     match std::path::Path::new(&file).extension() {
         None => load_with_load_address(file),
         Some(os_str) => match os_str.to_ascii_lowercase().to_str() {
             Some("prg") => load_with_load_address(file),
             Some("d81") | Some("d64") => cbm_select_and_load(file),
-            _ => {
-                let error =
-                    std::io::Error::new(std::io::ErrorKind::Other, "invalid file extension");
-                Err(error)
-            }
+            _ => Err(anyhow::Error::msg("invalid file extension")),
         },
     }
 }
@@ -73,16 +69,17 @@ fn purge_load_address(bytes: &mut Vec<u8>) -> u16 {
 }
 
 /// Open a CBM disk image from file or url
-fn cbm_open(diskimage: &str) -> std::io::Result<Box<dyn cbm::disk::Disk>> {
+fn cbm_open(diskimage: &str) -> Result<Box<dyn cbm::disk::Disk>> {
     if diskimage.starts_with("http") {
         let bytes = load_bytes_url(diskimage)?;
         let tmp_dir = Builder::new().tempdir()?;
         let path = tmp_dir.path().join("temp-image");
         let filename = path.to_str().unwrap_or("");
         save_binary(filename, &bytes)?;
-        return disk::open(filename, false);
+        Ok(disk::open(filename, false)?)
+    } else {
+        Ok(disk::open(diskimage, false)?)
     }
-    disk::open(diskimage, false)
 }
 
 /// User select PRG file from CBM image file or url
@@ -91,7 +88,7 @@ fn cbm_open(diskimage: &str) -> std::io::Result<Box<dyn cbm::disk::Disk>> {
 /// presents a numbered list from which the user
 /// can select. Loads the file and returns the load
 /// address together with raw bytes.
-fn cbm_select_and_load(diskimage: &str) -> std::io::Result<(u16, Vec<u8>)> {
+fn cbm_select_and_load(diskimage: &str) -> Result<(u16, Vec<u8>)> {
     let disk = cbm_open(diskimage)?;
     let dir = disk.directory()?;
     let prg_files = &mut dir
@@ -104,14 +101,11 @@ fn cbm_select_and_load(diskimage: &str) -> std::io::Result<(u16, Vec<u8>)> {
     io::stdout().flush()?;
     let mut selection = String::new();
     io::stdin().read_line(&mut selection)?;
-    let index = selection
-        .trim_end()
-        .parse::<usize>()
-        .expect("invalid index selection");
+    let index = selection.trim_end().parse::<usize>()?;
 
-    let invalid_selection_error = Error::new(ErrorKind::Other, "invalid selection");
-    let entry = prg_files.nth(index).ok_or(invalid_selection_error)?;
-
+    let entry = prg_files
+        .nth(index)
+        .ok_or_else(|| anyhow::Error::msg("invalid selection"))?;
     let mut bytes = Vec::<u8>::new();
     disk.open_file(&entry.filename)?
         .reader()?
@@ -121,7 +115,7 @@ fn cbm_select_and_load(diskimage: &str) -> std::io::Result<(u16, Vec<u8>)> {
 }
 
 /// Load a prg file or url into a byte vector and detect load address
-fn load_with_load_address(filename: &str) -> std::io::Result<(u16, Vec<u8>)> {
+fn load_with_load_address(filename: &str) -> Result<(u16, Vec<u8>)> {
     let mut bytes = load_bytes(filename)?;
     let load_address = purge_load_address(&mut bytes);
     info!(
@@ -134,7 +128,7 @@ fn load_with_load_address(filename: &str) -> std::io::Result<(u16, Vec<u8>)> {
 }
 
 /// Save bytes to binary file
-pub fn save_binary(filename: &str, bytes: &[u8]) -> std::io::Result<()> {
+pub fn save_binary(filename: &str, bytes: &[u8]) -> Result<(), std::io::Error> {
     info!("Saving {} bytes to {}", bytes.len(), filename);
     File::create(filename)?.write_all(bytes)
 }
