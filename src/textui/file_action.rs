@@ -1,74 +1,12 @@
-use crate::textui::centered_rect;
-use crossterm::event::KeyCode;
-
-use anyhow::Result;
+use crate::textui::{centered_rect, StatefulList};
 
 use tui::{
     backend::Backend,
     style::{Color, Modifier, Style},
     text::Span,
-    widgets::{Block, BorderType, Borders, Clear, List, ListItem, ListState},
+    widgets::{Block, BorderType, Borders, Clear, List, ListItem},
     Frame,
 };
-
-pub struct StatefulList<T> {
-    pub state: ListState,
-    pub items: Vec<T>,
-}
-
-impl<T> StatefulList<T> {
-    pub fn with_items(items: Vec<T>) -> StatefulList<T> {
-        StatefulList {
-            state: ListState::default(),
-            items,
-        }
-    }
-
-    fn next(&mut self) {
-        let i = match self.state.selected() {
-            Some(i) => {
-                if i >= self.items.len() - 1 {
-                    0
-                } else {
-                    i + 1
-                }
-            }
-            None => 0,
-        };
-        self.state.select(Some(i));
-    }
-
-    fn previous(&mut self) {
-        let i = match self.state.selected() {
-            Some(i) => {
-                if i == 0 {
-                    self.items.len() - 1
-                } else {
-                    i - 1
-                }
-            }
-            None => 0,
-        };
-        self.state.select(Some(i));
-    }
-
-    pub fn is_selected(&self) -> bool {
-        self.state.selected() != None
-    }
-
-    pub fn unselect(&mut self) {
-        self.state.select(None);
-    }
-
-    pub fn keypress(&mut self, key: crossterm::event::KeyCode) -> Result<()> {
-        match key {
-            KeyCode::Down => self.next(),
-            KeyCode::Up => self.previous(),
-            _ => {}
-        }
-        Ok(())
-    }
-}
 
 /// Handles actions on selected files, e.g running, downloading, etc.
 pub fn render_prg_widget<B: Backend>(

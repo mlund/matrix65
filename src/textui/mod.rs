@@ -12,16 +12,74 @@ use tui::{
     layout::{Alignment, Constraint, Direction, Layout, Rect},
     style::{Color, Modifier, Style},
     text::{Span, Spans},
-    widgets::{Block, BorderType, Borders, Clear, List, ListItem, Paragraph},
+    widgets::{Block, BorderType, Borders, Clear, List, ListItem, ListState, Paragraph},
     Frame, Terminal,
 };
 
 use crate::filehost;
 use serialport::SerialPort;
-
 mod file_action;
 mod file_selector;
 use file_selector::FilesApp;
+
+pub struct StatefulList<T> {
+    pub state: ListState,
+    pub items: Vec<T>,
+}
+
+impl<T> StatefulList<T> {
+    pub fn with_items(items: Vec<T>) -> StatefulList<T> {
+        StatefulList {
+            state: ListState::default(),
+            items,
+        }
+    }
+
+    fn next(&mut self) {
+        let i = match self.state.selected() {
+            Some(i) => {
+                if i >= self.items.len() - 1 {
+                    0
+                } else {
+                    i + 1
+                }
+            }
+            None => 0,
+        };
+        self.state.select(Some(i));
+    }
+
+    fn previous(&mut self) {
+        let i = match self.state.selected() {
+            Some(i) => {
+                if i == 0 {
+                    self.items.len() - 1
+                } else {
+                    i - 1
+                }
+            }
+            None => 0,
+        };
+        self.state.select(Some(i));
+    }
+
+    pub fn is_selected(&self) -> bool {
+        self.state.selected() != None
+    }
+
+    pub fn unselect(&mut self) {
+        self.state.select(None);
+    }
+
+    pub fn keypress(&mut self, key: crossterm::event::KeyCode) -> Result<()> {
+        match key {
+            KeyCode::Down => self.next(),
+            KeyCode::Up => self.previous(),
+            _ => {}
+        }
+        Ok(())
+    }
+}
 
 /// Specified the currently active widget of the TUI
 #[derive(PartialEq)]
@@ -35,7 +93,7 @@ struct App {
     files: FilesApp,
     messages: Vec<String>,
     current_widget: AppWidgets,
-    file_action: file_action::StatefulList<String>,
+    file_action: StatefulList<String>,
     busy: bool,
 }
 
@@ -45,7 +103,7 @@ impl App {
             files: FilesApp::new(port, filehost_items),
             messages: vec!["Matrix65 welcomes you to the FileHost!".to_string()],
             current_widget: AppWidgets::FileSelector,
-            file_action: file_action::StatefulList::with_items(vec![
+            file_action: StatefulList::with_items(vec![
                 "Run".to_string(),
                 "Reset and Run".to_string(),
                 "Cancel".to_string(),
