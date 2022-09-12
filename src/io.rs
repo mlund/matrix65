@@ -14,6 +14,7 @@
 
 /// Routines related to file/url/terminal I/O
 use cbm::disk;
+use cbm::disk::directory::DirectoryEntry;
 use cbm::disk::file::FileOps;
 use log::info;
 use std::fs::File;
@@ -80,6 +81,18 @@ fn cbm_open(diskimage: &str) -> Result<Box<dyn cbm::disk::Disk>> {
     } else {
         Ok(disk::open(diskimage, false)?)
     }
+}
+
+/// Load n'th file ffrom CBM disk image and return load address and bytes
+pub fn cbm_load_file(disk: Box<dyn cbm::disk::Disk>, index: usize) -> Result<(u16, Vec<u8>)> {
+    let dir = disk.directory()?;
+    let entry = dir.iter().nth(index).ok_or_else(|| anyhow::Error::msg("invalid selection"))?;
+    let mut bytes = Vec::<u8>::new();
+    disk.open_file(&entry.filename)?
+        .reader()?
+        .read_to_end(&mut bytes)?;
+    let load_address = purge_load_address(&mut bytes);
+    Ok((load_address, bytes))
 }
 
 /// User select PRG file from CBM image file or url

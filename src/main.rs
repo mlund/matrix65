@@ -23,6 +23,7 @@ mod serial;
 mod textui;
 
 use anyhow::Result;
+use tui::widgets::ListItem;
 
 fn main() {
     if let Err(err) = do_main() {
@@ -68,7 +69,10 @@ fn do_main() -> Result<()> {
             let mut entries: Vec<_> = filehost::get_file_list()?
                 .iter()
                 .cloned()
-                .filter(|item| item.filename.to_lowercase().ends_with(".prg"))
+                .filter(|item| {
+                    item.filename.to_lowercase().ends_with(".prg")
+                        | item.filename.to_lowercase().ends_with(".d81")
+                })
                 .collect();
             entries.sort_by_key(|i| i.title.clone());
             textui::start_tui(&mut port, &entries)?;

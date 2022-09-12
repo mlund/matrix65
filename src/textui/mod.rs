@@ -18,8 +18,8 @@ use crossterm::{
     terminal::{disable_raw_mode, enable_raw_mode, EnterAlternateScreen, LeaveAlternateScreen},
 };
 
-use std::io;
 use anyhow::Result;
+use std::io;
 use tui::{
     backend::{Backend, CrosstermBackend},
     layout::{Alignment, Constraint, Direction, Layout, Rect},
@@ -31,9 +31,9 @@ use tui::{
 
 use crate::filehost;
 use serialport::SerialPort;
+mod cbm_browser;
 mod file_action;
 mod file_selector;
-mod cbm_browser;
 use file_selector::FilesApp;
 
 /// Specified the currently active widget of the TUI
@@ -41,6 +41,7 @@ use file_selector::FilesApp;
 enum AppWidgets {
     FileSelector,
     FileAction,
+    CBMBrowser,
     Help,
 }
 
@@ -55,6 +56,8 @@ struct App {
     file_action: StatefulList<String>,
     /// Browser for files CBM disk images (d81 etc)
     cbm_browser: StatefulList<String>,
+    /// Selected CBM disk
+    cbm_disk: Option<Box<dyn cbm::disk::Disk>>,
     /// Set to true when UI is unresponsive
     busy: bool,
 }
@@ -68,15 +71,27 @@ impl App {
             file_action: StatefulList::with_items(vec![
                 "Run".to_string(),
                 "Reset and Run".to_string(),
+                "Open CBM disk...".to_string(),
                 "Cancel".to_string(),
             ]),
             cbm_browser: StatefulList::with_items(Vec::<String>::new()),
+            cbm_disk: None,
             busy: false,
         }
     }
 
     pub fn set_current_widget(&mut self, widget: AppWidgets) {
         self.current_widget = widget;
+    }
+
+    /// Populate and activate CBM disk browser
+    fn activate_cbm_browser(&mut self) {
+        self.set_current_widget(AppWidgets::CBMBrowser);
+
+        
+
+
+        self.cbm_browser.items = vec!["hej".to_string(), "med".to_string()];
     }
 
     pub fn keypress(&mut self, key: crossterm::event::KeyCode) -> Result<()> {
@@ -108,18 +123,29 @@ impl App {
                     AppWidgets::FileAction => {
                         self.set_current_widget(AppWidgets::FileSelector);
                         match self.file_action.state.selected() {
-                            Some(0) => self.files.run(false), // run
-                            Some(1) => self.files.run(true),  // reset, then run
-                            _ => Ok(()),
-                        }?;
+                            Some(0) => self.files.run(false)?, // run
+                            Some(1) => self.files.run(true)?,  // reset, then run
+                            Some(2) => self.activate_cbm_browser(),
+                            _ => {},
+                        };
                         self.file_action.unselect();
                     }
-                    _ => {}
+                    AppWidgets::CBMBrowser => {
+                        if self.cbm_browser.is_selected() {
+                            self.set_current_widget(AppWidgets::FileAction);
+
+                        }
+                        match self.cbm_browser.state.selected() {
+                            _ => {},
+                        };
+                        self.file_action.unselect();
+                    }                    _ => {}
                 }
             }
             _ => {}
         }
         match self.current_widget {
+            AppWidgets::CBMBrowser => self.cbm_browser.keypress(key),
             AppWidgets::FileAction => self.file_action.keypress(key),
             AppWidgets::FileSelector => self.files.keypress(key),
             _ => Ok(()),
@@ -223,6 +249,10 @@ fn ui<B: Backend>(f: &mut Frame<B>, app: &mut App) {
 
     if app.current_widget == AppWidgets::FileAction {
         file_action::render_prg_widget(f, &mut app.file_action, app.busy);
+    }
+
+    if app.current_widget == AppWidgets::CBMBrowser {
+        cbm_browser::render_cbm_selector_widget(f, &mut app.cbm_browser);
     }
 }
 

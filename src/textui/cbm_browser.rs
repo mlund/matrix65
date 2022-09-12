@@ -13,13 +13,11 @@
 // limitations under the license.
 
 use crate::textui::{centered_rect, StatefulList};
-use crossterm::event::KeyCode;
-use anyhow::Result;
 use tui::{
     backend::Backend,
     style::{Color, Modifier, Style},
     text::Span,
-    widgets::{Block, BorderType, Borders, Clear, List, ListItem, ListState},
+    widgets::{Block, BorderType, Borders, Clear, List, ListItem},
     Frame,
 };
 
@@ -27,7 +25,6 @@ use tui::{
 pub fn render_cbm_selector_widget<B: Backend>(
     f: &mut Frame<B>,
     file_list: &mut StatefulList<String>,
-    busy: bool,
 ) {
     let area = centered_rect(15, 15, f.size());
     let block = Block::default()
