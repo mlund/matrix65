@@ -145,7 +145,7 @@ pub fn start_tui(
     terminal.show_cursor()?;
 
     if let Err(err) = res {
-        println!("{:?}", err)
+        println!("Error: {}", err)
     }
     Ok(())
 }

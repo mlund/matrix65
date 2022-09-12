@@ -12,7 +12,8 @@
 // see the license for the specific language governing permissions and
 // limitations under the license.
 
-/// Routines related to file loading and stdio
+/// Routines related to file/url/terminal I/O
+ 
 use cbm::disk;
 use cbm::disk::file::FileOps;
 use log::info;
