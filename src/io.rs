@@ -21,15 +21,24 @@ use std::fs::File;
 use std::io::{self, Read, Write};
 use tempfile::Builder;
 
+/// Fill byte vector from url with compatible error
+fn load_bytes_url(url: &str) -> std::io::Result<Vec<u8>> {
+    let request = match reqwest::blocking::get(url) {
+        Ok(req) => req,
+        Err(err) => {
+            // @todo using unstable, this may be replaced with Error::other()
+            let error = std::io::Error::new(std::io::ErrorKind::Other, err.to_string());
+            return Err(error);
+        },
+    };
+    Ok(request.bytes().unwrap().to_vec())
+}
+
 /// Load file or url into byte vector
 fn load_bytes(filename: &str) -> std::io::Result<Vec<u8>> {
     let mut bytes = Vec::new();
     if filename.starts_with("http") {
-        bytes = reqwest::blocking::get(filename)
-            .unwrap()
-            .bytes()
-            .unwrap()
-            .to_vec();
+        bytes = load_bytes_url(filename)?;
     } else {
         File::open(&filename)?.read_to_end(&mut bytes)?;
     }
@@ -73,14 +82,10 @@ fn purge_load_address(bytes: &mut Vec<u8>) -> u16 {
 /// Open a CBM disk image from file or url
 fn cbm_open(diskimage: &str) -> std::io::Result<Box<dyn cbm::disk::Disk>> {
     if diskimage.starts_with("http") {
+        let bytes = load_bytes_url(diskimage)?;
         let tmp_dir = Builder::new().tempdir()?;
         let path = tmp_dir.path().join("temp-image");
         let filename = path.to_str().unwrap_or("");
-        let bytes = reqwest::blocking::get(diskimage)
-            .unwrap()
-            .bytes()
-            .unwrap()
-            .to_vec();
         save_binary(filename, &bytes)?;
         return disk::open(filename, false);
     }
