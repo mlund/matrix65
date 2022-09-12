@@ -12,6 +12,7 @@
 // see the license for the specific language governing permissions and
 // limitations under the license.
 
+use crate::textui::StatefulList;
 use crate::filehost;
 use crate::serial;
 use crossterm::event::KeyCode;
@@ -30,6 +31,10 @@ pub struct FilesApp {
     pub items: Vec<filehost::Record>,
     pub port: Box<dyn SerialPort>,
     toggle_sort: bool,
+    /// Selected CBM disk
+    cbm_disk: Option<Box<dyn cbm::disk::Disk>>,
+    /// Browser for files CBM disk images (d81 etc)
+    pub cbm_browser: StatefulList<String>,
 }
 
 impl FilesApp {
@@ -39,6 +44,8 @@ impl FilesApp {
             items: filehost_items.to_vec(),
             port: port.try_clone().unwrap(),
             toggle_sort: false,
+            cbm_disk: None,
+            cbm_browser: StatefulList::with_items(Vec::<String>::new()),
         }
     }
 
@@ -102,10 +109,11 @@ impl FilesApp {
     /// Transfer and run selected file
     pub fn run(&mut self, reset_before_run: bool) -> Result<()> {
         let url = self.selected_url();
-        match url.ends_with(".prg") {
-            true => serial::handle_prg(&mut self.port, &url, reset_before_run, true),
-            false => Ok(()),
+        if url.ends_with(".prg") {
+            serial::handle_prg(&mut self.port, &url, reset_before_run, true)?;
+        } else if url.ends_with(".d81") & self.cbm_disk.is_some() {
         }
+        Ok(())
     }
 
     pub fn make_widget(&self) -> Paragraph {

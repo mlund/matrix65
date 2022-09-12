@@ -23,7 +23,6 @@ mod serial;
 mod textui;
 
 use anyhow::Result;
-use tui::widgets::ListItem;
 
 fn main() {
     if let Err(err) = do_main() {

@@ -14,7 +14,6 @@
 
 /// Routines related to file/url/terminal I/O
 use cbm::disk;
-use cbm::disk::directory::DirectoryEntry;
 use cbm::disk::file::FileOps;
 use log::info;
 use std::fs::File;

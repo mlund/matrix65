@@ -54,10 +54,6 @@ struct App {
     current_widget: AppWidgets,
     /// Browser for actions on a single file
     file_action: StatefulList<String>,
-    /// Browser for files CBM disk images (d81 etc)
-    cbm_browser: StatefulList<String>,
-    /// Selected CBM disk
-    cbm_disk: Option<Box<dyn cbm::disk::Disk>>,
     /// Set to true when UI is unresponsive
     busy: bool,
 }
@@ -74,8 +70,6 @@ impl App {
                 "Open CBM disk...".to_string(),
                 "Cancel".to_string(),
             ]),
-            cbm_browser: StatefulList::with_items(Vec::<String>::new()),
-            cbm_disk: None,
             busy: false,
         }
     }
@@ -88,10 +82,7 @@ impl App {
     fn activate_cbm_browser(&mut self) {
         self.set_current_widget(AppWidgets::CBMBrowser);
 
-        
-
-
-        self.cbm_browser.items = vec!["hej".to_string(), "med".to_string()];
+        self.files.cbm_browser.items = vec!["hej".to_string(), "med".to_string()];
     }
 
     pub fn keypress(&mut self, key: crossterm::event::KeyCode) -> Result<()> {
@@ -131,11 +122,11 @@ impl App {
                         self.file_action.unselect();
                     }
                     AppWidgets::CBMBrowser => {
-                        if self.cbm_browser.is_selected() {
+                        if self.files.cbm_browser.is_selected() {
                             self.set_current_widget(AppWidgets::FileAction);
 
                         }
-                        match self.cbm_browser.state.selected() {
+                        match self.files.cbm_browser.state.selected() {
                             _ => {},
                         };
                         self.file_action.unselect();
@@ -145,7 +136,7 @@ impl App {
             _ => {}
         }
         match self.current_widget {
-            AppWidgets::CBMBrowser => self.cbm_browser.keypress(key),
+            AppWidgets::CBMBrowser => self.files.cbm_browser.keypress(key),
             AppWidgets::FileAction => self.file_action.keypress(key),
             AppWidgets::FileSelector => self.files.keypress(key),
             _ => Ok(()),
@@ -252,7 +243,7 @@ fn ui<B: Backend>(f: &mut Frame<B>, app: &mut App) {
     }
 
     if app.current_widget == AppWidgets::CBMBrowser {
-        cbm_browser::render_cbm_selector_widget(f, &mut app.cbm_browser);
+        cbm_browser::render_cbm_selector_widget(f, &mut app.files.cbm_browser);
     }
 }
 
