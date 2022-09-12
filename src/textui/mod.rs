@@ -19,7 +19,6 @@ use crossterm::{
 };
 
 use std::io;
-
 use anyhow::Result;
 use tui::{
     backend::{Backend, CrosstermBackend},
@@ -34,66 +33,8 @@ use crate::filehost;
 use serialport::SerialPort;
 mod file_action;
 mod file_selector;
+mod cbm_browser;
 use file_selector::FilesApp;
-
-pub struct StatefulList<T> {
-    pub state: ListState,
-    pub items: Vec<T>,
-}
-
-impl<T> StatefulList<T> {
-    pub fn with_items(items: Vec<T>) -> StatefulList<T> {
-        StatefulList {
-            state: ListState::default(),
-            items,
-        }
-    }
-
-    fn next(&mut self) {
-        let i = match self.state.selected() {
-            Some(i) => {
-                if i >= self.items.len() - 1 {
-                    0
-                } else {
-                    i + 1
-                }
-            }
-            None => 0,
-        };
-        self.state.select(Some(i));
-    }
-
-    fn previous(&mut self) {
-        let i = match self.state.selected() {
-            Some(i) => {
-                if i == 0 {
-                    self.items.len() - 1
-                } else {
-                    i - 1
-                }
-            }
-            None => 0,
-        };
-        self.state.select(Some(i));
-    }
-
-    pub fn is_selected(&self) -> bool {
-        self.state.selected() != None
-    }
-
-    pub fn unselect(&mut self) {
-        self.state.select(None);
-    }
-
-    pub fn keypress(&mut self, key: crossterm::event::KeyCode) -> Result<()> {
-        match key {
-            KeyCode::Down => self.next(),
-            KeyCode::Up => self.previous(),
-            _ => {}
-        }
-        Ok(())
-    }
-}
 
 /// Specified the currently active widget of the TUI
 #[derive(PartialEq)]
@@ -104,10 +45,17 @@ enum AppWidgets {
 }
 
 struct App {
+    /// FileHost file browser
     files: FilesApp,
+    /// Status messages presented in the UI
     messages: Vec<String>,
+    /// Holds the active widget
     current_widget: AppWidgets,
+    /// Browser for actions on a single file
     file_action: StatefulList<String>,
+    /// Browser for files CBM disk images (d81 etc)
+    cbm_browser: StatefulList<String>,
+    /// Set to true when UI is unresponsive
     busy: bool,
 }
 
@@ -122,6 +70,7 @@ impl App {
                 "Reset and Run".to_string(),
                 "Cancel".to_string(),
             ]),
+            cbm_browser: StatefulList::with_items(Vec::<String>::new()),
             busy: false,
         }
     }
@@ -362,4 +311,63 @@ fn centered_rect(percent_x: u16, percent_y: u16, r: Rect) -> Rect {
             .as_ref(),
         )
         .split(popup_layout[1])[1]
+}
+
+pub struct StatefulList<T> {
+    pub state: ListState,
+    pub items: Vec<T>,
+}
+
+impl<T> StatefulList<T> {
+    pub fn with_items(items: Vec<T>) -> StatefulList<T> {
+        StatefulList {
+            state: ListState::default(),
+            items,
+        }
+    }
+
+    fn next(&mut self) {
+        let i = match self.state.selected() {
+            Some(i) => {
+                if i >= self.items.len() - 1 {
+                    0
+                } else {
+                    i + 1
+                }
+            }
+            None => 0,
+        };
+        self.state.select(Some(i));
+    }
+
+    fn previous(&mut self) {
+        let i = match self.state.selected() {
+            Some(i) => {
+                if i == 0 {
+                    self.items.len() - 1
+                } else {
+                    i - 1
+                }
+            }
+            None => 0,
+        };
+        self.state.select(Some(i));
+    }
+
+    pub fn is_selected(&self) -> bool {
+        self.state.selected() != None
+    }
+
+    pub fn unselect(&mut self) {
+        self.state.select(None);
+    }
+
+    pub fn keypress(&mut self, key: crossterm::event::KeyCode) -> Result<()> {
+        match key {
+            KeyCode::Down => self.next(),
+            KeyCode::Up => self.previous(),
+            _ => {}
+        }
+        Ok(())
+    }
 }
