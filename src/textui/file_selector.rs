@@ -12,9 +12,9 @@
 // see the license for the specific language governing permissions and
 // limitations under the license.
 
-use crate::textui::StatefulList;
 use crate::filehost;
 use crate::serial;
+use crate::textui::StatefulList;
 use crossterm::event::KeyCode;
 use serialport::SerialPort;
 use tui::{
@@ -32,7 +32,7 @@ pub struct FilesApp {
     pub port: Box<dyn SerialPort>,
     toggle_sort: bool,
     /// Selected CBM disk
-    cbm_disk: Option<Box<dyn cbm::disk::Disk>>,
+    pub cbm_disk: Option<Box<dyn cbm::disk::Disk>>,
     /// Browser for files CBM disk images (d81 etc)
     pub cbm_browser: StatefulList<String>,
 }
@@ -100,7 +100,7 @@ impl FilesApp {
         self.state.select(Some(i));
     }
 
-    fn selected_url(&self) -> String {
+    pub fn selected_url(&self) -> String {
         let sel = self.state.selected().unwrap_or(0);
         let item = &self.items[sel];
         format!("https://files.mega65.org/{}", &item.location)
@@ -111,7 +111,19 @@ impl FilesApp {
         let url = self.selected_url();
         if url.ends_with(".prg") {
             serial::handle_prg(&mut self.port, &url, reset_before_run, true)?;
-        } else if url.ends_with(".d81") & self.cbm_disk.is_some() {
+        } else if url.ends_with(".d81") & self.cbm_disk.is_some() & self.cbm_browser.is_selected() {
+            let selected_file = self.cbm_browser.state.selected().unwrap();
+            let (load_address, bytes) =
+                crate::io::cbm_load_file(self.cbm_disk.as_ref().unwrap().as_ref(), selected_file)?;
+            serial::handle_prg_from_bytes(
+                &mut self.port,
+                &bytes,
+                load_address,
+                reset_before_run,
+                true,
+            )?;
+            self.cbm_browser.unselect();
+            self.cbm_disk = None;
         }
         Ok(())
     }

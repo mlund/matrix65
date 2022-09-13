@@ -79,10 +79,16 @@ impl App {
     }
 
     /// Populate and activate CBM disk browser
-    fn activate_cbm_browser(&mut self) {
+    fn activate_cbm_browser(&mut self) -> Result<()> {
         self.set_current_widget(AppWidgets::CBMBrowser);
-
-        self.files.cbm_browser.items = vec!["hej".to_string(), "med".to_string()];
+        let url = self.files.selected_url();
+        self.files.cbm_disk = Some(crate::io::cbm_open(&url)?);
+        if self.files.cbm_disk.is_some() {
+            let dir = self.files.cbm_disk.as_ref().unwrap().directory()?;
+            let files: Vec<String> = dir.iter().map(|i| i.filename.to_string()).collect();
+            self.files.cbm_browser.items = files;
+        }
+        Ok(())
     }
 
     pub fn keypress(&mut self, key: crossterm::event::KeyCode) -> Result<()> {
@@ -116,21 +122,21 @@ impl App {
                         match self.file_action.state.selected() {
                             Some(0) => self.files.run(false)?, // run
                             Some(1) => self.files.run(true)?,  // reset, then run
-                            Some(2) => self.activate_cbm_browser(),
-                            _ => {},
+                            Some(2) => self.activate_cbm_browser()?,
+                            _ => {}
                         };
                         self.file_action.unselect();
                     }
                     AppWidgets::CBMBrowser => {
                         if self.files.cbm_browser.is_selected() {
                             self.set_current_widget(AppWidgets::FileAction);
-
                         }
-                        match self.files.cbm_browser.state.selected() {
-                            _ => {},
-                        };
+                        // match self.files.cbm_browser.state.selected() {
+                        //     _ => {}
+                        // };
                         self.file_action.unselect();
-                    }                    _ => {}
+                    }
+                    _ => {}
                 }
             }
             _ => {}

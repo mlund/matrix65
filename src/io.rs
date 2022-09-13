@@ -69,7 +69,7 @@ fn purge_load_address(bytes: &mut Vec<u8>) -> u16 {
 }
 
 /// Open a CBM disk image from file or url
-fn cbm_open(diskimage: &str) -> Result<Box<dyn cbm::disk::Disk>> {
+pub fn cbm_open(diskimage: &str) -> Result<Box<dyn cbm::disk::Disk>> {
     if diskimage.starts_with("http") {
         let bytes = load_bytes_url(diskimage)?;
         let tmp_dir = Builder::new().tempdir()?;
@@ -83,9 +83,10 @@ fn cbm_open(diskimage: &str) -> Result<Box<dyn cbm::disk::Disk>> {
 }
 
 /// Load n'th file ffrom CBM disk image and return load address and bytes
-pub fn cbm_load_file(disk: Box<dyn cbm::disk::Disk>, index: usize) -> Result<(u16, Vec<u8>)> {
+pub fn cbm_load_file(disk: &dyn cbm::disk::Disk, index: usize) -> Result<(u16, Vec<u8>)> {
     let dir = disk.directory()?;
-    let entry = dir.iter().nth(index).ok_or_else(|| anyhow::Error::msg("invalid selection"))?;
+    let entry = dir.get(index)
+        .ok_or_else(|| anyhow::Error::msg("invalid selection"))?;
     let mut bytes = Vec::<u8>::new();
     disk.open_file(&entry.filename)?
         .reader()?

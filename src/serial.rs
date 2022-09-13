@@ -330,6 +330,31 @@ pub fn write_memory(port: &mut Box<dyn SerialPort>, address: u16, bytes: &[u8]) 
     Ok(())
 }
 
+/// Transfer to MEGA65 and optionally run PRG
+///
+/// C64/C65 modes are selected from the load address
+pub fn handle_prg_from_bytes(
+    port: &mut Box<dyn SerialPort>,
+    bytes: &[u8],
+    load_address: u16,
+    reset_before_run: bool,
+    run: bool,
+) -> Result<()> {
+    if reset_before_run {
+        reset(port)?;
+    }
+    match load_address {
+        0x2001 => go65(port)?,
+        0x0801 => go64(port)?,
+        _ => todo!("arbitrary load address"),
+    }
+    write_memory(port, load_address, bytes)?;
+    if run {
+        type_text(port, "run\r")?;
+    }
+    Ok(())
+}
+
 /// Transfers and optionally run PRG to MEGA65
 ///
 /// Here `file` can be a local file or a url. CBM disk images are allowed and
@@ -341,17 +366,5 @@ pub fn handle_prg(
     run: bool,
 ) -> Result<()> {
     let (load_address, bytes) = io::load_prg(file)?;
-    if reset_before_run {
-        reset(port)?;
-    }
-    match load_address {
-        0x2001 => go65(port)?,
-        0x0801 => go64(port)?,
-        _ => todo!("arbitrary load address"),
-    }
-    write_memory(port, load_address, &bytes)?;
-    if run {
-        type_text(port, "run\r")?;
-    }
-    Ok(())
+    handle_prg_from_bytes(port, &bytes, load_address, reset_before_run, run)
 }
