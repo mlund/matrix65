@@ -80,12 +80,22 @@ impl App {
 
     /// Populate and activate CBM disk browser
     fn activate_cbm_browser(&mut self) -> Result<()> {
+        self.busy = false;
         self.set_current_widget(AppWidgets::CBMBrowser);
         let url = self.files.selected_url();
         self.files.cbm_disk = Some(crate::io::cbm_open(&url)?);
         if self.files.cbm_disk.is_some() {
             let dir = self.files.cbm_disk.as_ref().unwrap().directory()?;
-            let files: Vec<String> = dir.iter().map(|i| i.filename.to_string()).collect();
+            let files: Vec<String> = dir
+                .iter()
+                .map(|i| {
+                    format!(
+                        "{}.{}",
+                        i.filename.to_string(),
+                        i.file_attributes.file_type
+                    )
+                })
+                .collect();
             self.files.cbm_browser.items = files;
         }
         Ok(())
@@ -128,12 +138,13 @@ impl App {
                         self.file_action.unselect();
                     }
                     AppWidgets::CBMBrowser => {
-                        if self.files.cbm_browser.is_selected() {
-                            self.set_current_widget(AppWidgets::FileAction);
-                        }
-                        // match self.files.cbm_browser.state.selected() {
-                        //     _ => {}
-                        // };
+                        match self.files.cbm_browser.state.selected() {
+                            _ => {
+                                self.files.run(false)?;
+                                self.busy = false;
+                                self.current_widget = AppWidgets::FileSelector;
+                            }
+                        };
                         self.file_action.unselect();
                     }
                     _ => {}
@@ -150,14 +161,14 @@ impl App {
     }
 
     /// Set OK message if previous message is something else
-    pub fn ok_message(&mut self) {
+    pub fn _ok_message(&mut self) {
         let ok_text = "Ready".to_string();
         if *self.messages.last().unwrap() != ok_text {
             self.messages.push(ok_text);
         }
     }
 
-    pub fn _add_message(&mut self, message: &str) {
+    pub fn add_message(&mut self, message: &str) {
         self.messages.push(message.to_string());
     }
 
@@ -204,8 +215,12 @@ fn run_app<B: Backend>(terminal: &mut Terminal<B>, mut app: App) -> Result<()> {
         if let Event::Key(key) = event::read()? {
             match key.code {
                 KeyCode::Char('q') => return Ok(()),
+                KeyCode::Char('R') => {
+                    crate::serial::reset(&mut app.files.port)?;
+                    app.add_message("Reset MEGA65");
+                },
                 KeyCode::Enter => {
-                    if app.file_action.is_selected() {
+                    if app.files.cbm_browser.is_selected() {
                         app.busy = true;
                         terminal.draw(|f| ui(f, &mut app))?;
                     } else {
@@ -214,8 +229,15 @@ fn run_app<B: Backend>(terminal: &mut Terminal<B>, mut app: App) -> Result<()> {
                 }
                 _ => {}
             }
-            app.keypress(key.code)?;
-            app.ok_message();
+            match app.keypress(key.code) {
+                Ok(()) => {}
+                Err(error) => {
+                    app.add_message(error.to_string().as_str());
+                    app.files.cbm_browser.unselect();
+                    app.current_widget = AppWidgets::FileSelector;
+                }
+            }
+            //app.ok_message();
         }
     }
 }
@@ -249,7 +271,7 @@ fn ui<B: Backend>(f: &mut Frame<B>, app: &mut App) {
     }
 
     if app.current_widget == AppWidgets::CBMBrowser {
-        cbm_browser::render_cbm_selector_widget(f, &mut app.files.cbm_browser);
+        cbm_browser::render_cbm_selector_widget(f, &mut app.files.cbm_browser, app.busy);
     }
 }
 
@@ -274,9 +296,10 @@ fn render_help_widget<B: Backend>(f: &mut Frame<B>) {
     let area = centered_rect(35, 30, f.size());
     let block = Block::default()
         .title(Span::styled(
-            "Keyboard Shortcuts",
+            "Help",
             Style::default()
                 .add_modifier(Modifier::BOLD)
+                .add_modifier(Modifier::SLOW_BLINK)
                 .fg(Color::White),
         ))
         .style(Style::default().bg(Color::Blue))
@@ -284,15 +307,17 @@ fn render_help_widget<B: Backend>(f: &mut Frame<B>) {
         .border_type(BorderType::Rounded);
     let text = vec![
         Spans::from(Span::styled(
-            "Run selection (r)",
-            Style::default().fg(Color::White),
+            "Matrix Mode Serial Communicator for MEGA65\n",
+            Style::default().fg(Color::White).add_modifier(Modifier::BOLD),
         )),
         Spans::from(Span::styled(
-            "Reset & run selection (R)",
+            "Copyright (c) 2022 Wombat - Apache/MIT Licensed",
             Style::default().fg(Color::White),
         )),
+        Spans::from(Span::styled("", Style::default().fg(Color::White))),
+
         Spans::from(Span::styled(
-            "Save selection to local disk (w)",
+            "Select item (enter)",
             Style::default().fg(Color::White),
         )),
         Spans::from(Span::styled(
@@ -301,6 +326,10 @@ fn render_help_widget<B: Backend>(f: &mut Frame<B>) {
         )),
         Spans::from(Span::styled(
             "Toggle help (h)",
+            Style::default().fg(Color::White),
+        )),
+        Spans::from(Span::styled(
+            "Reset MEGA65 (R)",
             Style::default().fg(Color::White),
         )),
         Spans::from(Span::styled("Quit (q)", Style::default().fg(Color::White))),

@@ -53,8 +53,6 @@ impl FilesApp {
         match key {
             KeyCode::Down => self.next(),
             KeyCode::Up => self.previous(),
-            KeyCode::Char('r') => self.run(false)?,
-            KeyCode::Char('R') => self.run(true)?,
             KeyCode::Char('s') => self.sort_filehost(),
             _ => {}
         }
@@ -124,6 +122,8 @@ impl FilesApp {
             )?;
             self.cbm_browser.unselect();
             self.cbm_disk = None;
+        } else {
+            return Err(anyhow::Error::msg("Cannot run selection"));
         }
         Ok(())
     }
@@ -132,12 +132,12 @@ impl FilesApp {
         let sel = self.state.selected().unwrap_or(0);
         let item = &self.items[sel];
         let fileinfo_text = vec![
-            Spans::from(format!("Title:      {}", item.title)),
-            Spans::from(format!("Filename:   {}", item.filename)),
-            Spans::from(format!("Category:   {} - {}", item.category, item.kind)),
-            Spans::from(format!("Author:     {}", item.author)),
-            Spans::from(format!("Published:  {}", item.published)),
-            Spans::from(format!("Rating:     {}", item.rating)),
+            Spans::from(format!("Title:     {}", item.title)),
+            Spans::from(format!("Filename:  {}", item.filename)),
+            Spans::from(format!("Category:  {} - {}", item.category, item.kind)),
+            Spans::from(format!("Author:    {}", item.author)),
+            Spans::from(format!("Published: {}", item.published)),
+            Spans::from(format!("Rating:    {}", item.rating)),
         ];
         let block = Block::default()
             .title(Span::styled(

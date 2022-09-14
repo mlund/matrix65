@@ -25,8 +25,13 @@ use tui::{
 pub fn render_cbm_selector_widget<B: Backend>(
     f: &mut Frame<B>,
     file_list: &mut StatefulList<String>,
+    busy: bool,
 ) {
-    let area = centered_rect(15, 15, f.size());
+    let background_color = match busy {
+        true => Color::DarkGray,
+        false => Color::Blue,
+    };
+    let area = centered_rect(20, 20, f.size());
     let block = Block::default()
         .title(Span::styled(
             "Select file on CBM disk",
@@ -34,7 +39,7 @@ pub fn render_cbm_selector_widget<B: Backend>(
                 .add_modifier(Modifier::BOLD)
                 .fg(Color::White),
         ))
-        .style(Style::default().bg(Color::Blue))
+        .style(Style::default().bg(background_color))
         .borders(Borders::ALL)
         .border_type(BorderType::Rounded);
 
