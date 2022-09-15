@@ -1,3 +1,7 @@
+[![Crates.io](https://img.shields.io/crates/v/matrix65)](https://crates.io/crates/matrix65)
+[![Rust](https://github.com/mlund/matrix65/actions/workflows/rust.yml/badge.svg)](https://github.com/mlund/matrix65/actions/workflows/rust.yml)
+[![rust-clippy analyze](https://github.com/mlund/matrix65/actions/workflows/rust-clippy.yml/badge.svg)](https://github.com/mlund/matrix65/actions/workflows/rust-clippy.yml)
+
 # Matrix Mode Serial Communicator for MEGA65
 
 `matrix65` is a CLI tool, for communicating with the [MEGA65](https://mega65.org/)
@@ -9,11 +13,14 @@ Disclaimer: This tool is still under development; use it at your own risk.
 
 ### Installing
 
-The easiest way to get started is to [install Rust](https://www.rust-lang.org/tools/install), followed by:
+The easiest way to get started is to [install the Rust compiler](https://www.rust-lang.org/tools/install), followed by:
 
 ~~~ bash
 cargo install matrix65
 ~~~
+
+There are no dependencies on MacOS and Windows, but on Linux, you may have to install
+`libudev-dev` (Ubuntu) or `systemd-devel` (Fedora).
 
 ### Using
 
@@ -61,14 +68,14 @@ your involvement is very welcome.
 
 ## Motivation
 
-1. I wanted to learn more about Rust and the MEGA65 hardware
-2. A Text User Inferface (TUI) for the FileHost has an inherent retro-feel
+1. Creative fun: I wanted to learn more about Rust and the MEGA65 hardware
+2. A Text User Interface (TUI) for the FileHost has an inherent retro-feel
 3. Rust
    - is safe and free of undefined behavior
    - compiles to lean, efficient binaries, similar to C
    - has lot's of useful _crates_, e.g. for supporting [CBM disk images](https://crates.io/crates/cbm)
    - has **Cargo** which makes dependency handling easy-peasy
-4. In my opinion, a higher level language is more suitable than C for tasks like
+4. In my opinion, higher level language features are more suitable than C for tasks like
    HTTP requests, JSON parsing, and TUI handling.
 
 ## Resources
