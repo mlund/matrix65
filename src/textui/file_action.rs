@@ -32,7 +32,7 @@ pub fn render_prg_widget<B: Backend>(
         true => Color::DarkGray,
         false => Color::Blue,
     };
-    let area = centered_rect(15, 15, f.size());
+    let area = centered_rect(30, 7, f.size());
     let block = Block::default()
         .title(Span::styled(
             "File actions",

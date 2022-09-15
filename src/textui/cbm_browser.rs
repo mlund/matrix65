@@ -31,7 +31,7 @@ pub fn render_cbm_selector_widget<B: Backend>(
         true => Color::DarkGray,
         false => Color::Blue,
     };
-    let area = centered_rect(20, 20, f.size());
+    let area = centered_rect(35, 10, f.size());
     let block = Block::default()
         .title(Span::styled(
             "Select file on CBM disk",

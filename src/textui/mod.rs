@@ -290,7 +290,7 @@ fn make_messages_widget(app_messages: &[String]) -> List {
 }
 
 fn render_help_widget<B: Backend>(f: &mut Frame<B>) {
-    let area = centered_rect(35, 30, f.size());
+    let area = centered_rect(50, 10, f.size());
     let block = Block::default()
         .title(Span::styled(
             "Help",
@@ -340,15 +340,23 @@ fn render_help_widget<B: Backend>(f: &mut Frame<B>) {
     f.render_widget(paragraph, area);
 }
 
-/// helper function to create a centered rect using up certain percentage of the available rect `r`
-fn centered_rect(percent_x: u16, percent_y: u16, r: Rect) -> Rect {
+/// helper function to create a centered rectangle of given width and height
+fn centered_rect(width: u16, height: u16, r: Rect) -> Rect {
+    let ymargin = match r.height > height {
+        true => (r.height - height) / 2,
+        false => 1
+    };
+    let xmargin = match r.width > width {
+        true => (r.width - width) / 2,
+        false => 1
+    };
     let popup_layout = Layout::default()
         .direction(Direction::Vertical)
         .constraints(
             [
-                Constraint::Percentage((100 - percent_y) / 2),
-                Constraint::Percentage(percent_y),
-                Constraint::Percentage((100 - percent_y) / 2),
+                Constraint::Length(ymargin),
+                Constraint::Length(height),
+                Constraint::Length(ymargin),
             ]
             .as_ref(),
         )
@@ -358,9 +366,9 @@ fn centered_rect(percent_x: u16, percent_y: u16, r: Rect) -> Rect {
         .direction(Direction::Horizontal)
         .constraints(
             [
-                Constraint::Percentage((100 - percent_x) / 2),
-                Constraint::Percentage(percent_x),
-                Constraint::Percentage((100 - percent_x) / 2),
+                Constraint::Length(xmargin),
+                Constraint::Length(width),
+                Constraint::Length(xmargin),
             ]
             .as_ref(),
         )
