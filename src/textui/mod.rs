@@ -62,7 +62,10 @@ impl App {
     fn new(port: &mut Box<dyn SerialPort>, filehost_items: &[filehost::Record]) -> App {
         App {
             files: FilesApp::new(port, filehost_items),
-            messages: vec!["Matrix65 welcomes you to the FileHost!".to_string()],
+            messages: vec![
+                "Matrix65 welcomes you to the FileHost!".to_string(),
+                "Press 'h' for help".to_string(),
+            ],
             current_widget: AppWidgets::FileSelector,
             file_action: StatefulList::with_items(vec![
                 "Run".to_string(),
@@ -88,13 +91,7 @@ impl App {
             let dir = self.files.cbm_disk.as_ref().unwrap().directory()?;
             let files: Vec<String> = dir
                 .iter()
-                .map(|i| {
-                    format!(
-                        "{}.{}",
-                        i.filename.to_string(),
-                        i.file_attributes.file_type
-                    )
-                })
+                .map(|i| format!("{}.{}", i.filename.to_string(), i.file_attributes.file_type))
                 .collect();
             self.files.cbm_browser.items = files;
         }
@@ -218,7 +215,7 @@ fn run_app<B: Backend>(terminal: &mut Terminal<B>, mut app: App) -> Result<()> {
                 KeyCode::Char('R') => {
                     crate::serial::reset(&mut app.files.port)?;
                     app.add_message("Reset MEGA65");
-                },
+                }
                 KeyCode::Enter => {
                     if app.files.cbm_browser.is_selected() {
                         app.busy = true;
@@ -308,14 +305,15 @@ fn render_help_widget<B: Backend>(f: &mut Frame<B>) {
     let text = vec![
         Spans::from(Span::styled(
             "Matrix Mode Serial Communicator for MEGA65\n",
-            Style::default().fg(Color::White).add_modifier(Modifier::BOLD),
+            Style::default()
+                .fg(Color::White)
+                .add_modifier(Modifier::BOLD),
         )),
         Spans::from(Span::styled(
             "Copyright (c) 2022 Wombat - Apache/MIT Licensed",
             Style::default().fg(Color::White),
         )),
         Spans::from(Span::styled("", Style::default().fg(Color::White))),
-
         Spans::from(Span::styled(
             "Select item (enter)",
             Style::default().fg(Color::White),
