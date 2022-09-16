@@ -18,9 +18,9 @@ use crossterm::{
     terminal::{disable_raw_mode, enable_raw_mode, EnterAlternateScreen, LeaveAlternateScreen},
 };
 
-use crate::textui::ui;
-use crate::textui::{App, AppWidgets};
-
+use crate::filehost;
+use serialport::SerialPort;
+use crate::textui::{ui, App, AppWidgets};
 use anyhow::Result;
 use std::io;
 use tui::{
@@ -28,9 +28,7 @@ use tui::{
     Terminal,
 };
 
-use crate::filehost;
-use serialport::SerialPort;
-
+/// This is the first entry for the TUI
 pub fn start_tui(
     port: &mut Box<dyn SerialPort>,
     filehost_items: &[filehost::Record],
@@ -69,11 +67,11 @@ pub fn run_app<B: Backend>(terminal: &mut Terminal<B>, mut app: App) -> Result<(
             match key.code {
                 KeyCode::Char('q') => return Ok(()),
                 KeyCode::Char('R') => {
-                    crate::serial::reset(&mut app.files.port)?;
+                    crate::serial::reset(&mut app.port)?;
                     app.add_message("Reset MEGA65");
                 }
                 KeyCode::Enter => {
-                    if app.files.cbm_browser.is_selected() {
+                    if app.cbm_browser.is_selected() {
                         app.busy = true;
                         terminal.draw(|f| ui::ui(f, &mut app))?;
                     } else {
@@ -86,7 +84,7 @@ pub fn run_app<B: Backend>(terminal: &mut Terminal<B>, mut app: App) -> Result<(
                 Ok(()) => {}
                 Err(error) => {
                     app.add_message(error.to_string().as_str());
-                    app.files.cbm_browser.unselect();
+                    app.cbm_browser.unselect();
                     app.active_widget = AppWidgets::FileSelector;
                 }
             }

@@ -33,15 +33,15 @@ pub fn ui<B: Backend>(f: &mut Frame<B>, app: &mut App) {
         .constraints([Constraint::Min(4), Constraint::Length(8)].as_ref())
         .split(f.size());
 
-    let files_widget = make_files_widget(&app.files.filetable.items);
-    f.render_stateful_widget(files_widget, chunks[0], &mut app.files.filetable.state);
+    let files_widget = make_files_widget(&app.filetable.items);
+    f.render_stateful_widget(files_widget, chunks[0], &mut app.filetable.state);
 
     let chunks = Layout::default()
         .direction(Direction::Horizontal)
         .constraints([Constraint::Percentage(50), Constraint::Percentage(50)].as_ref())
         .split(chunks[1]);
 
-    let fileinfo_widget = make_fileinfo_widget(&app.files.filetable);
+    let fileinfo_widget = make_fileinfo_widget(&app.filetable);
     f.render_widget(fileinfo_widget, chunks[0]);
 
     let messages_widget = make_messages_widget(&app.messages);
@@ -56,7 +56,7 @@ pub fn ui<B: Backend>(f: &mut Frame<B>, app: &mut App) {
     }
 
     if app.active_widget == AppWidgets::CBMBrowser {
-        render_cbm_selector_widget(f, &mut app.files.cbm_browser, app.busy);
+        render_cbm_selector_widget(f, &mut app.cbm_browser, app.busy);
     }
 }
 
