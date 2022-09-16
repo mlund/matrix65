@@ -245,8 +245,8 @@ fn ui<B: Backend>(f: &mut Frame<B>, app: &mut App) {
         .constraints([Constraint::Min(4), Constraint::Length(8)].as_ref())
         .split(f.size());
 
-    let files_widget = file_selector::make_files_widget(&app.files.items);
-    f.render_stateful_widget(files_widget, chunks[0], &mut app.files.state);
+    let files_widget = file_selector::make_files_widget(&app.files.filetable.items);
+    f.render_stateful_widget(files_widget, chunks[0], &mut app.files.filetable.state);
 
     let chunks = Layout::default()
         .direction(Direction::Horizontal)

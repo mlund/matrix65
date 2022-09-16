@@ -26,9 +26,10 @@ use tui::{
 
 use anyhow::Result;
 
+use super::StatefulTable;
+
 pub struct FilesApp {
-    pub state: TableState,
-    pub items: Vec<filehost::Record>,
+    pub filetable: StatefulTable<filehost::Record>,
     pub port: Box<dyn SerialPort>,
     toggle_sort: bool,
     /// Selected CBM disk
@@ -40,8 +41,7 @@ pub struct FilesApp {
 impl FilesApp {
     pub fn new(port: &mut Box<dyn SerialPort>, filehost_items: &[filehost::Record]) -> FilesApp {
         FilesApp {
-            state: TableState::default(),
-            items: filehost_items.to_vec(),
+            filetable: StatefulTable::with_items(filehost_items.to_vec()),
             port: port.try_clone().unwrap(),
             toggle_sort: false,
             cbm_disk: None,
@@ -60,9 +60,9 @@ impl FilesApp {
     }
 
     fn next(&mut self) {
-        let i = match self.state.selected() {
+        let i = match self.filetable.state.selected() {
             Some(i) => {
-                if i >= self.items.len() - 1 {
+                if i >= self.filetable.items.len() - 1 {
                     0
                 } else {
                     i + 1
@@ -70,37 +70,37 @@ impl FilesApp {
             }
             None => 0,
         };
-        self.state.select(Some(i));
+        self.filetable.state.select(Some(i));
     }
 
     /// Toggles filehost file sorting by date or title
     fn sort_filehost(&mut self) {
         if self.toggle_sort {
-            self.items.sort_by_key(|i| i.published.clone());
-            self.items.reverse();
+            self.filetable.items.sort_by_key(|i| i.published.clone());
+            self.filetable.items.reverse();
         } else {
-            self.items.sort_by_key(|i| i.title.clone());
+            self.filetable.items.sort_by_key(|i| i.title.clone());
         }
         self.toggle_sort = !self.toggle_sort;
     }
 
     fn previous(&mut self) {
-        let i = match self.state.selected() {
+        let i = match self.filetable.state.selected() {
             Some(i) => {
                 if i == 0 {
-                    self.items.len() - 1
+                    self.filetable.items.len() - 1
                 } else {
                     i - 1
                 }
             }
             None => 0,
         };
-        self.state.select(Some(i));
+        self.filetable.state.select(Some(i));
     }
 
     pub fn selected_url(&self) -> String {
-        let sel = self.state.selected().unwrap_or(0);
-        let item = &self.items[sel];
+        let sel = self.filetable.state.selected().unwrap_or(0);
+        let item = &self.filetable.items[sel];
         format!("https://files.mega65.org/{}", &item.location)
     }
 
@@ -129,8 +129,8 @@ impl FilesApp {
     }
 
     pub fn make_widget(&self) -> Paragraph {
-        let sel = self.state.selected().unwrap_or(0);
-        let item = &self.items[sel];
+        let sel = self.filetable.state.selected().unwrap_or(0);
+        let item = &self.filetable.items[sel];
         let fileinfo_text = vec![
             Spans::from(format!("Title:     {}", item.title)),
             Spans::from(format!("Filename:  {}", item.filename)),
