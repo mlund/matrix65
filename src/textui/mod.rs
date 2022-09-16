@@ -25,7 +25,7 @@ use tui::{
     layout::{Alignment, Constraint, Direction, Layout, Rect},
     style::{Color, Modifier, Style},
     text::{Span, Spans},
-    widgets::{Block, BorderType, Borders, Clear, List, ListItem, ListState, Paragraph},
+    widgets::{Block, BorderType, Borders, Clear, List, ListItem, ListState, Paragraph, TableState},
     Frame, Terminal,
 };
 
@@ -384,6 +384,65 @@ impl<T> StatefulList<T> {
     pub fn with_items(items: Vec<T>) -> StatefulList<T> {
         StatefulList {
             state: ListState::default(),
+            items,
+        }
+    }
+
+    fn next(&mut self) {
+        let i = match self.state.selected() {
+            Some(i) => {
+                if i >= self.items.len() - 1 {
+                    0
+                } else {
+                    i + 1
+                }
+            }
+            None => 0,
+        };
+        self.state.select(Some(i));
+    }
+
+    fn previous(&mut self) {
+        let i = match self.state.selected() {
+            Some(i) => {
+                if i == 0 {
+                    self.items.len() - 1
+                } else {
+                    i - 1
+                }
+            }
+            None => 0,
+        };
+        self.state.select(Some(i));
+    }
+
+    pub fn is_selected(&self) -> bool {
+        self.state.selected() != None
+    }
+
+    pub fn unselect(&mut self) {
+        self.state.select(None);
+    }
+
+    pub fn keypress(&mut self, key: crossterm::event::KeyCode) -> Result<()> {
+        match key {
+            KeyCode::Down => self.next(),
+            KeyCode::Up => self.previous(),
+            _ => {}
+        }
+        Ok(())
+    }
+}
+
+pub struct StatefulTable<T> {
+    pub state: TableState,
+    pub items: Vec<T>,
+}
+
+impl<T> StatefulTable<T> {
+    pub fn with_items(items: Vec<T>) -> StatefulTable<T> {
+        StatefulTable {
+            state: TableState::default(),
             items,
         }
     }
