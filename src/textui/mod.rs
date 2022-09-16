@@ -31,24 +31,24 @@ pub enum AppWidgets {
 }
 
 pub struct App {
-    /// Status messages presented in the UI
-    messages: Vec<String>,
     /// Holds the active widget
     active_widget: AppWidgets,
-    /// Browser for actions on a single file
-    file_action: StatefulList<String>,
     /// Set to true when UI is unresponsive
     busy: bool,
+    /// Browser for files CBM disk images (d81 etc)
+    cbm_browser: StatefulList<String>,
+    /// Selected CBM disk
+    cbm_disk: Option<Box<dyn cbm::disk::Disk>>,
+    /// Browser for actions on a single file
+    file_action: StatefulList<String>,
     /// FileHost file browser
-    pub filetable: StatefulTable<filehost::Record>,
+    filetable: StatefulTable<filehost::Record>,
+    /// Status messages presented in the UI
+    messages: Vec<String>,
     /// Serial port to communicate on
-    pub port: Box<dyn SerialPort>,
+    port: Box<dyn SerialPort>,
     /// Determines how to sort the filehost table
     toggle_sort: bool,
-    /// Selected CBM disk
-    pub cbm_disk: Option<Box<dyn cbm::disk::Disk>>,
-    /// Browser for files CBM disk images (d81 etc)
-    pub cbm_browser: StatefulList<String>,
 }
 
 impl App {
@@ -95,16 +95,10 @@ impl App {
         Ok(())
     }
 
-    // todo this should be moved to ui.rs
+    // @todo this should be moved to ui.rs so that mod.rs is independent of crossterm
     pub fn keypress(&mut self, key: crossterm::event::KeyCode) -> Result<()> {
         match key {
-            KeyCode::Char('h') => {
-                if self.active_widget != AppWidgets::Help {
-                    self.set_current_widget(AppWidgets::Help);
-                } else {
-                    self.set_current_widget(AppWidgets::FileSelector);
-                }
-            }
+            KeyCode::Char('h') => self.toggle_help(),
 
             // Escape jumps back to filehost selector
             KeyCode::Esc => {
@@ -189,15 +183,24 @@ impl App {
         }
     }
 
+    /// Toggles the help pop-up
+    fn toggle_help(&mut self) {
+        if self.active_widget != AppWidgets::Help {
+            self.set_current_widget(AppWidgets::Help);
+        } else {
+            self.set_current_widget(AppWidgets::FileSelector);
+        }
+    }
+
     /// Set OK message if previous message is something else
-    pub fn _ok_message(&mut self) {
+    fn _ok_message(&mut self) {
         let ok_text = "Ready".to_string();
         if *self.messages.last().unwrap() != ok_text {
             self.messages.push(ok_text);
         }
     }
 
-    pub fn add_message(&mut self, message: &str) {
+    fn add_message(&mut self, message: &str) {
         self.messages.push(message.to_string());
     }
 
@@ -247,4 +250,3 @@ impl App {
         Ok(())
     }
 }
-
