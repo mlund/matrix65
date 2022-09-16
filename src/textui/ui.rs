@@ -17,15 +17,12 @@ use tui::{
     layout::{Alignment, Constraint, Direction, Layout, Rect},
     style::{Color, Modifier, Style},
     text::{Span, Spans},
-    widgets::{Block, BorderType, Borders, Cell, Clear, List, ListItem, Paragraph, Row, Table},
+    widgets::{Block, BorderType, Borders, Cell, Clear, List, ListItem, ListState, Paragraph, Row, Table, TableState},
     Frame,
 };
 
 use crate::filehost;
-use crate::textui::StatefulList;
 use crate::textui::{App, AppWidgets};
-
-use super::StatefulTable;
 
 pub fn ui<B: Backend>(f: &mut Frame<B>, app: &mut App) {
     let chunks = Layout::default()
@@ -60,7 +57,7 @@ pub fn ui<B: Backend>(f: &mut Frame<B>, app: &mut App) {
     }
 }
 
-// Make messages widget
+// Widget with logging information
 fn make_messages_widget(app_messages: &[String]) -> List {
     let messages: Vec<ListItem> = app_messages
         .iter()
@@ -77,6 +74,7 @@ fn make_messages_widget(app_messages: &[String]) -> List {
     )))
 }
 
+/// Popup widget with helful information
 fn render_help_widget<B: Backend>(f: &mut Frame<B>) {
     let area = centered_rect(50, 10, f.size());
     let block = Block::default()
@@ -163,8 +161,8 @@ fn centered_rect(width: u16, height: u16, r: Rect) -> Rect {
         .split(popup_layout[1])[1]
 }
 
-/// Handles actions on selected files, e.g running, downloading, etc.
-pub fn render_cbm_selector_widget<B: Backend>(
+/// Widget for selecting files inside CBM disk images
+fn render_cbm_selector_widget<B: Backend>(
     f: &mut Frame<B>,
     file_list: &mut StatefulList<String>,
     busy: bool,
@@ -203,8 +201,8 @@ pub fn render_cbm_selector_widget<B: Backend>(
     f.render_stateful_widget(list, area, &mut file_list.state);
 }
 
-/// Handles actions on selected files, e.g running, downloading, etc.
-pub fn render_prg_widget<B: Backend>(
+/// Popup widget with selectable actions for PRG/D81 files
+fn render_prg_widget<B: Backend>(
     f: &mut Frame<B>,
     action_list: &mut StatefulList<String>,
     busy: bool,
@@ -243,8 +241,8 @@ pub fn render_prg_widget<B: Backend>(
     f.render_stateful_widget(list, area, &mut action_list.state);
 }
 
-/// Create widget showing details about a selected filehost item
-pub fn make_fileinfo_widget(filetable: &StatefulTable<filehost::Record>) -> Paragraph {
+/// Widget showing details about a selected filehost item
+fn make_fileinfo_widget(filetable: &StatefulTable<filehost::Record>) -> Paragraph {
     let sel = filetable.state.selected().unwrap_or(0);
     let item = &filetable.items[sel];
     let fileinfo_text = vec![
@@ -267,7 +265,8 @@ pub fn make_fileinfo_widget(filetable: &StatefulTable<filehost::Record>) -> Para
         .alignment(Alignment::Left)
 }
 
-pub fn make_files_widget(filehost_items: &[filehost::Record]) -> Table {
+/// Table with all FileHost records
+fn make_files_widget(filehost_items: &[filehost::Record]) -> Table {
     let selected_style = Style::default().add_modifier(Modifier::REVERSED);
     let normal_style = Style::default().bg(Color::Blue);
     let header_cells = ["Title", "Type", "Author"]
@@ -307,4 +306,106 @@ pub fn make_files_widget(filehost_items: &[filehost::Record]) -> Table {
             Constraint::Percentage(25),
         ]);
     table
+}
+
+pub struct StatefulList<T> {
+    pub state: ListState,
+    pub items: Vec<T>,
+}
+
+impl<T> StatefulList<T> {
+    pub fn with_items(items: Vec<T>) -> StatefulList<T> {
+        StatefulList {
+            state: ListState::default(),
+            items,
+        }
+    }
+
+    pub fn next(&mut self) {
+        let i = match self.state.selected() {
+            Some(i) => {
+                if i >= self.items.len() - 1 {
+                    0
+                } else {
+                    i + 1
+                }
+            }
+            None => 0,
+        };
+        self.state.select(Some(i));
+    }
+
+    pub fn previous(&mut self) {
+        let i = match self.state.selected() {
+            Some(i) => {
+                if i == 0 {
+                    self.items.len() - 1
+                } else {
+                    i - 1
+                }
+            }
+            None => 0,
+        };
+        self.state.select(Some(i));
+    }
+
+    pub fn is_selected(&self) -> bool {
+        self.state.selected() != None
+    }
+
+    pub fn unselect(&mut self) {
+        self.state.select(None);
+    }
+}
+
+pub struct StatefulTable<T> {
+    pub state: TableState,
+    pub items: Vec<T>,
+}
+
+impl<T> StatefulTable<T> {
+    pub fn with_items(items: Vec<T>) -> StatefulTable<T> {
+        StatefulTable {
+            state: TableState::default(),
+            items,
+        }
+    }
+
+    pub fn next(&mut self) {
+        let i = match self.state.selected() {
+            Some(i) => {
+                if i >= self.items.len() - 1 {
+                    0
+                } else {
+                    i + 1
+                }
+            }
+            None => 0,
+        };
+        self.state.select(Some(i));
+    }
+
+    pub fn previous(&mut self) {
+        let i = match self.state.selected() {
+            Some(i) => {
+                if i == 0 {
+                    self.items.len() - 1
+                } else {
+                    i - 1
+                }
+            }
+            None => 0,
+        };
+        self.state.select(Some(i));
+    }
+
+    #[allow(dead_code)]
+    pub fn is_selected(&self) -> bool {
+        self.state.selected() != None
+    }
+
+    #[allow(dead_code)]
+    pub fn unselect(&mut self) {
+        self.state.select(None);
+    }
 }

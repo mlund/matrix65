@@ -19,9 +19,9 @@ use crossterm::{
 };
 
 use crate::filehost;
-use serialport::SerialPort;
 use crate::textui::{ui, App, AppWidgets};
 use anyhow::Result;
+use serialport::SerialPort;
 use std::io;
 use tui::{
     backend::{Backend, CrosstermBackend},
@@ -59,7 +59,7 @@ pub fn start_tui(
     Ok(())
 }
 
-pub fn run_app<B: Backend>(terminal: &mut Terminal<B>, mut app: App) -> Result<()> {
+fn run_app<B: Backend>(terminal: &mut Terminal<B>, mut app: App) -> Result<()> {
     loop {
         terminal.draw(|f| ui::ui(f, &mut app))?;
 

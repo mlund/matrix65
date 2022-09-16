@@ -12,14 +12,14 @@
 // see the license for the specific language governing permissions and
 // limitations under the license.
 
+pub mod terminal;
+mod ui;
+
 use crate::{filehost, serial};
 use anyhow::Result;
 use crossterm::event::KeyCode;
 use serialport::SerialPort;
-use tui::widgets::{ListState, TableState};
-
-pub mod terminal;
-mod ui;
+use ui::{StatefulList, StatefulTable};
 
 /// Specified the currently active widget of the TUI
 #[derive(PartialEq, Eq)]
@@ -95,6 +95,7 @@ impl App {
         Ok(())
     }
 
+    // todo this should be moved to ui.rs
     pub fn keypress(&mut self, key: crossterm::event::KeyCode) -> Result<()> {
         match key {
             KeyCode::Char('h') => {
@@ -147,25 +148,43 @@ impl App {
             _ => {}
         }
         match self.active_widget {
-            AppWidgets::CBMBrowser => self.cbm_browser.keypress(key),
-            AppWidgets::FileAction => self.file_action.keypress(key),
-            AppWidgets::FileSelector => {
-                match key {
-                    KeyCode::Down => {
-                        self.filetable.next();
-                        Ok(())
-                    },
-                    KeyCode::Up => {
-                        self.filetable.previous();
-                        Ok(())
-                    },
-                    KeyCode::Char('s') => {
-                        self.sort_filehost();
-                        Ok(())
-                    },
-                    _ => {Ok(())}
+            AppWidgets::CBMBrowser => match key {
+                KeyCode::Down => {
+                    self.cbm_browser.next();
+                    Ok(())
                 }
-            }
+                KeyCode::Up => {
+                    self.cbm_browser.previous();
+                    Ok(())
+                }
+                _ => Ok(()),
+            },
+            AppWidgets::FileAction => match key {
+                KeyCode::Down => {
+                    self.file_action.next();
+                    Ok(())
+                }
+                KeyCode::Up => {
+                    self.file_action.previous();
+                    Ok(())
+                }
+                _ => Ok(()),
+            },
+            AppWidgets::FileSelector => match key {
+                KeyCode::Down => {
+                    self.filetable.next();
+                    Ok(())
+                }
+                KeyCode::Up => {
+                    self.filetable.previous();
+                    Ok(())
+                }
+                KeyCode::Char('s') => {
+                    self.sort_filehost();
+                    Ok(())
+                }
+                _ => Ok(()),
+            },
             _ => Ok(()),
         }
     }
@@ -229,113 +248,3 @@ impl App {
     }
 }
 
-pub struct StatefulList<T> {
-    pub state: ListState,
-    pub items: Vec<T>,
-}
-
-impl<T> StatefulList<T> {
-    pub fn with_items(items: Vec<T>) -> StatefulList<T> {
-        StatefulList {
-            state: ListState::default(),
-            items,
-        }
-    }
-
-    fn next(&mut self) {
-        let i = match self.state.selected() {
-            Some(i) => {
-                if i >= self.items.len() - 1 {
-                    0
-                } else {
-                    i + 1
-                }
-            }
-            None => 0,
-        };
-        self.state.select(Some(i));
-    }
-
-    fn previous(&mut self) {
-        let i = match self.state.selected() {
-            Some(i) => {
-                if i == 0 {
-                    self.items.len() - 1
-                } else {
-                    i - 1
-                }
-            }
-            None => 0,
-        };
-        self.state.select(Some(i));
-    }
-
-    pub fn is_selected(&self) -> bool {
-        self.state.selected() != None
-    }
-
-    pub fn unselect(&mut self) {
-        self.state.select(None);
-    }
-
-    pub fn keypress(&mut self, key: crossterm::event::KeyCode) -> Result<()> {
-        match key {
-            KeyCode::Down => self.next(),
-            KeyCode::Up => self.previous(),
-            _ => {}
-        }
-        Ok(())
-    }
-}
-
-pub struct StatefulTable<T> {
-    pub state: TableState,
-    pub items: Vec<T>,
-}
-
-impl<T> StatefulTable<T> {
-    pub fn with_items(items: Vec<T>) -> StatefulTable<T> {
-        StatefulTable {
-            state: TableState::default(),
-            items,
-        }
-    }
-
-    fn next(&mut self) {
-        let i = match self.state.selected() {
-            Some(i) => {
-                if i >= self.items.len() - 1 {
-                    0
-                } else {
-                    i + 1
-                }
-            }
-            None => 0,
-        };
-        self.state.select(Some(i));
-    }
-
-    fn previous(&mut self) {
-        let i = match self.state.selected() {
-            Some(i) => {
-                if i == 0 {
-                    self.items.len() - 1
-                } else {
-                    i - 1
-                }
-            }
-            None => 0,
-        };
-        self.state.select(Some(i));
-    }
-
-    #[allow(dead_code)]
-    pub fn is_selected(&self) -> bool {
-        self.state.selected() != None
-    }
-
-    #[allow(dead_code)]
-    pub fn unselect(&mut self) {
-        self.state.select(None);
-    }
-}
