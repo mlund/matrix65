@@ -13,39 +13,129 @@
 // limitations under the license.
 
 use crossterm::{
-    event::{self, DisableMouseCapture, EnableMouseCapture, Event, KeyCode},
-    execute,
-    terminal::{disable_raw_mode, enable_raw_mode, EnterAlternateScreen, LeaveAlternateScreen},
+    event::KeyCode,
 };
 
 use anyhow::Result;
-use std::io;
 use tui::{
-    backend::{Backend, CrosstermBackend},
-    layout::{Alignment, Constraint, Direction, Layout, Rect},
-    style::{Color, Modifier, Style},
+    layout::Alignment,
+    style::{Modifier, Style},
     text::{Span, Spans},
-    widgets::{Block, BorderType, Borders, Clear, List, ListItem, ListState, Paragraph, TableState},
-    Frame, Terminal,
+    widgets::{Block, BorderType, Borders, ListState, Paragraph, TableState},
 };
 
 use crate::filehost;
+use crate::serial;
 use serialport::SerialPort;
-mod cbm_browser;
-mod file_action;
-mod file_selector;
-use file_selector::FilesApp;
+pub mod terminal;
+mod ui;
+
+pub struct FilesApp {
+    pub filetable: StatefulTable<filehost::Record>,
+    pub port: Box<dyn SerialPort>,
+    toggle_sort: bool,
+    /// Selected CBM disk
+    pub cbm_disk: Option<Box<dyn cbm::disk::Disk>>,
+    /// Browser for files CBM disk images (d81 etc)
+    pub cbm_browser: StatefulList<String>,
+}
+
+impl FilesApp {
+    pub fn new(port: &mut Box<dyn SerialPort>, filehost_items: &[filehost::Record]) -> FilesApp {
+        FilesApp {
+            filetable: StatefulTable::with_items(filehost_items.to_vec()),
+            port: port.try_clone().unwrap(),
+            toggle_sort: false,
+            cbm_disk: None,
+            cbm_browser: StatefulList::with_items(Vec::<String>::new()),
+        }
+    }
+
+    pub fn make_widget(&self) -> Paragraph {
+        let sel = self.filetable.state.selected().unwrap_or(0);
+        let item = &self.filetable.items[sel];
+        let fileinfo_text = vec![
+            Spans::from(format!("Title:     {}", item.title)),
+            Spans::from(format!("Filename:  {}", item.filename)),
+            Spans::from(format!("Category:  {} - {}", item.category, item.kind)),
+            Spans::from(format!("Author:    {}", item.author)),
+            Spans::from(format!("Published: {}", item.published)),
+            Spans::from(format!("Rating:    {}", item.rating)),
+        ];
+        let block = Block::default()
+            .title(Span::styled(
+                "File Info",
+                Style::default().add_modifier(Modifier::BOLD),
+            ))
+            .borders(Borders::ALL)
+            .border_type(BorderType::Rounded);
+        Paragraph::new(fileinfo_text)
+            .block(block)
+            .alignment(Alignment::Left)
+    }
+
+    pub fn keypress(&mut self, key: crossterm::event::KeyCode) -> Result<()> {
+        match key {
+            KeyCode::Down => self.filetable.next(),
+            KeyCode::Up => self.filetable.previous(),
+            KeyCode::Char('s') => self.sort_filehost(),
+            _ => {}
+        }
+        Ok(())
+    }
+
+    /// Toggles filehost file sorting by date or title
+    fn sort_filehost(&mut self) {
+        if self.toggle_sort {
+            self.filetable.items.sort_by_key(|i| i.published.clone());
+            self.filetable.items.reverse();
+        } else {
+            self.filetable.items.sort_by_key(|i| i.title.clone());
+        }
+        self.toggle_sort = !self.toggle_sort;
+    }
+
+    pub fn selected_url(&self) -> String {
+        let sel = self.filetable.state.selected().unwrap_or(0);
+        let item = &self.filetable.items[sel];
+        format!("https://files.mega65.org/{}", &item.location)
+    }
+
+    /// Transfer and run selected file
+    pub fn run(&mut self, reset_before_run: bool) -> Result<()> {
+        let url = self.selected_url();
+        if url.ends_with(".prg") {
+            serial::handle_prg(&mut self.port, &url, reset_before_run, true)?;
+        } else if url.ends_with(".d81") & self.cbm_disk.is_some() & self.cbm_browser.is_selected() {
+            let selected_file = self.cbm_browser.state.selected().unwrap();
+            let (load_address, bytes) =
+                crate::io::cbm_load_file(self.cbm_disk.as_ref().unwrap().as_ref(), selected_file)?;
+            serial::handle_prg_from_bytes(
+                &mut self.port,
+                &bytes,
+                load_address,
+                reset_before_run,
+                true,
+            )?;
+            self.cbm_browser.unselect();
+            self.cbm_disk = None;
+        } else {
+            return Err(anyhow::Error::msg("Cannot run selection"));
+        }
+        Ok(())
+    }
+}
 
 /// Specified the currently active widget of the TUI
-#[derive(PartialEq)]
-enum AppWidgets {
+#[derive(PartialEq, Eq)]
+pub enum AppWidgets {
     FileSelector,
     FileAction,
     CBMBrowser,
     Help,
 }
 
-struct App {
+pub struct App {
     /// FileHost file browser
     files: FilesApp,
     /// Status messages presented in the UI
@@ -175,206 +265,6 @@ impl App {
     }
 }
 
-pub fn start_tui(
-    port: &mut Box<dyn SerialPort>,
-    filehost_items: &[filehost::Record],
-) -> Result<()> {
-    // setup terminal
-    enable_raw_mode()?;
-    let mut stdout = io::stdout();
-    execute!(stdout, EnterAlternateScreen, EnableMouseCapture)?;
-    let backend = CrosstermBackend::new(stdout);
-    let mut terminal = Terminal::new(backend)?;
-
-    // create app and run it
-    let app = App::new(port, filehost_items);
-    let res = run_app(&mut terminal, app);
-
-    // restore terminal
-    disable_raw_mode()?;
-    execute!(
-        terminal.backend_mut(),
-        LeaveAlternateScreen,
-        DisableMouseCapture
-    )?;
-    terminal.show_cursor()?;
-
-    if let Err(err) = res {
-        println!("Error: {}", err)
-    }
-    Ok(())
-}
-
-fn run_app<B: Backend>(terminal: &mut Terminal<B>, mut app: App) -> Result<()> {
-    loop {
-        terminal.draw(|f| ui(f, &mut app))?;
-
-        if let Event::Key(key) = event::read()? {
-            match key.code {
-                KeyCode::Char('q') => return Ok(()),
-                KeyCode::Char('R') => {
-                    crate::serial::reset(&mut app.files.port)?;
-                    app.add_message("Reset MEGA65");
-                }
-                KeyCode::Enter => {
-                    if app.files.cbm_browser.is_selected() {
-                        app.busy = true;
-                        terminal.draw(|f| ui(f, &mut app))?;
-                    } else {
-                        app.busy = false;
-                    }
-                }
-                _ => {}
-            }
-            match app.keypress(key.code) {
-                Ok(()) => {}
-                Err(error) => {
-                    app.add_message(error.to_string().as_str());
-                    app.files.cbm_browser.unselect();
-                    app.current_widget = AppWidgets::FileSelector;
-                }
-            }
-            //app.ok_message();
-        }
-    }
-}
-
-fn ui<B: Backend>(f: &mut Frame<B>, app: &mut App) {
-    let chunks = Layout::default()
-        .direction(Direction::Vertical)
-        .constraints([Constraint::Min(4), Constraint::Length(8)].as_ref())
-        .split(f.size());
-
-    let files_widget = file_selector::make_files_widget(&app.files.filetable.items);
-    f.render_stateful_widget(files_widget, chunks[0], &mut app.files.filetable.state);
-
-    let chunks = Layout::default()
-        .direction(Direction::Horizontal)
-        .constraints([Constraint::Percentage(50), Constraint::Percentage(50)].as_ref())
-        .split(chunks[1]);
-
-    let fileinfo_widget = app.files.make_widget();
-    f.render_widget(fileinfo_widget, chunks[0]);
-
-    let messages_widget = make_messages_widget(&app.messages);
-    f.render_widget(messages_widget, chunks[1]);
-
-    if app.current_widget == AppWidgets::Help {
-        render_help_widget(f);
-    }
-
-    if app.current_widget == AppWidgets::FileAction {
-        file_action::render_prg_widget(f, &mut app.file_action, app.busy);
-    }
-
-    if app.current_widget == AppWidgets::CBMBrowser {
-        cbm_browser::render_cbm_selector_widget(f, &mut app.files.cbm_browser, app.busy);
-    }
-}
-
-// Make messages widget
-fn make_messages_widget(app_messages: &[String]) -> List {
-    let messages: Vec<ListItem> = app_messages
-        .iter()
-        .enumerate()
-        .rev()
-        .map(|(i, m)| {
-            let content = vec![Spans::from(Span::raw(format!("{}: {}", i + 1, m)))];
-            ListItem::new(content)
-        })
-        .collect();
-    List::new(messages).block(Block::default().borders(Borders::ALL).title(Span::styled(
-        "Messages",
-        Style::default().add_modifier(Modifier::BOLD),
-    )))
-}
-
-fn render_help_widget<B: Backend>(f: &mut Frame<B>) {
-    let area = centered_rect(50, 10, f.size());
-    let block = Block::default()
-        .title(Span::styled(
-            "Help",
-            Style::default()
-                .add_modifier(Modifier::BOLD)
-                .add_modifier(Modifier::SLOW_BLINK)
-                .fg(Color::White),
-        ))
-        .style(Style::default().bg(Color::Blue))
-        .borders(Borders::ALL)
-        .border_type(BorderType::Rounded);
-    let text = vec![
-        Spans::from(Span::styled(
-            "Matrix Mode Serial Communicator for MEGA65\n",
-            Style::default()
-                .fg(Color::White)
-                .add_modifier(Modifier::BOLD),
-        )),
-        Spans::from(Span::styled(
-            "Copyright (c) 2022 Wombat - Apache/MIT Licensed",
-            Style::default().fg(Color::White),
-        )),
-        Spans::from(Span::styled("", Style::default().fg(Color::White))),
-        Spans::from(Span::styled(
-            "Select item (enter)",
-            Style::default().fg(Color::White),
-        )),
-        Spans::from(Span::styled(
-            "Toggle sorting by title or date (s)",
-            Style::default().fg(Color::White),
-        )),
-        Spans::from(Span::styled(
-            "Toggle help (h)",
-            Style::default().fg(Color::White),
-        )),
-        Spans::from(Span::styled(
-            "Reset MEGA65 (R)",
-            Style::default().fg(Color::White),
-        )),
-        Spans::from(Span::styled("Quit (q)", Style::default().fg(Color::White))),
-    ];
-    let paragraph = Paragraph::new(text.clone())
-        .block(block)
-        .alignment(Alignment::Center);
-    f.render_widget(Clear, area);
-    //this clears out the background
-    f.render_widget(paragraph, area);
-}
-
-/// helper function to create a centered rectangle of given width and height
-fn centered_rect(width: u16, height: u16, r: Rect) -> Rect {
-    let ymargin = match r.height > height {
-        true => (r.height - height) / 2,
-        false => 1
-    };
-    let xmargin = match r.width > width {
-        true => (r.width - width) / 2,
-        false => 1
-    };
-    let popup_layout = Layout::default()
-        .direction(Direction::Vertical)
-        .constraints(
-            [
-                Constraint::Length(ymargin),
-                Constraint::Length(height),
-                Constraint::Length(ymargin),
-            ]
-            .as_ref(),
-        )
-        .split(r);
-
-    Layout::default()
-        .direction(Direction::Horizontal)
-        .constraints(
-            [
-                Constraint::Length(xmargin),
-                Constraint::Length(width),
-                Constraint::Length(xmargin),
-            ]
-            .as_ref(),
-        )
-        .split(popup_layout[1])[1]
-}
-
 pub struct StatefulList<T> {
     pub state: ListState,
     pub items: Vec<T>,
@@ -475,20 +365,14 @@ impl<T> StatefulTable<T> {
         self.state.select(Some(i));
     }
 
+    #[allow(dead_code)]
     pub fn is_selected(&self) -> bool {
         self.state.selected() != None
     }
 
+    #[allow(dead_code)]
     pub fn unselect(&mut self) {
         self.state.select(None);
     }
 
-    pub fn keypress(&mut self, key: crossterm::event::KeyCode) -> Result<()> {
-        match key {
-            KeyCode::Down => self.next(),
-            KeyCode::Up => self.previous(),
-            _ => {}
-        }
-        Ok(())
-    }
 }
