@@ -12,21 +12,12 @@
 // see the license for the specific language governing permissions and
 // limitations under the license.
 
-use crossterm::{
-    event::KeyCode,
-};
-
+use crossterm::event::KeyCode;
 use anyhow::Result;
-use tui::{
-    layout::Alignment,
-    style::{Modifier, Style},
-    text::{Span, Spans},
-    widgets::{Block, BorderType, Borders, ListState, Paragraph, TableState},
-};
-
-use crate::filehost;
-use crate::serial;
+use tui::widgets::{ListState, TableState};
+use crate::{filehost, serial};
 use serialport::SerialPort;
+
 pub mod terminal;
 mod ui;
 
@@ -49,29 +40,6 @@ impl FilesApp {
             cbm_disk: None,
             cbm_browser: StatefulList::with_items(Vec::<String>::new()),
         }
-    }
-
-    pub fn make_widget(&self) -> Paragraph {
-        let sel = self.filetable.state.selected().unwrap_or(0);
-        let item = &self.filetable.items[sel];
-        let fileinfo_text = vec![
-            Spans::from(format!("Title:     {}", item.title)),
-            Spans::from(format!("Filename:  {}", item.filename)),
-            Spans::from(format!("Category:  {} - {}", item.category, item.kind)),
-            Spans::from(format!("Author:    {}", item.author)),
-            Spans::from(format!("Published: {}", item.published)),
-            Spans::from(format!("Rating:    {}", item.rating)),
-        ];
-        let block = Block::default()
-            .title(Span::styled(
-                "File Info",
-                Style::default().add_modifier(Modifier::BOLD),
-            ))
-            .borders(Borders::ALL)
-            .border_type(BorderType::Rounded);
-        Paragraph::new(fileinfo_text)
-            .block(block)
-            .alignment(Alignment::Left)
     }
 
     pub fn keypress(&mut self, key: crossterm::event::KeyCode) -> Result<()> {

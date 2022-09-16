@@ -25,6 +25,8 @@ use crate::filehost;
 use crate::textui::StatefulList;
 use crate::textui::{App, AppWidgets};
 
+use super::StatefulTable;
+
 pub fn ui<B: Backend>(f: &mut Frame<B>, app: &mut App) {
     let chunks = Layout::default()
         .direction(Direction::Vertical)
@@ -39,7 +41,7 @@ pub fn ui<B: Backend>(f: &mut Frame<B>, app: &mut App) {
         .constraints([Constraint::Percentage(50), Constraint::Percentage(50)].as_ref())
         .split(chunks[1]);
 
-    let fileinfo_widget = app.files.make_widget();
+    let fileinfo_widget = make_fileinfo_widget(&app.files.filetable);
     f.render_widget(fileinfo_widget, chunks[0]);
 
     let messages_widget = make_messages_widget(&app.messages);
@@ -239,6 +241,30 @@ pub fn render_prg_widget<B: Backend>(
 
     f.render_widget(Clear, area);
     f.render_stateful_widget(list, area, &mut action_list.state);
+}
+
+/// Create widget showing details about a selected filehost item
+pub fn make_fileinfo_widget(filetable: &StatefulTable<filehost::Record>) -> Paragraph {
+    let sel = filetable.state.selected().unwrap_or(0);
+    let item = &filetable.items[sel];
+    let fileinfo_text = vec![
+        Spans::from(format!("Title:     {}", item.title)),
+        Spans::from(format!("Filename:  {}", item.filename)),
+        Spans::from(format!("Category:  {} - {}", item.category, item.kind)),
+        Spans::from(format!("Author:    {}", item.author)),
+        Spans::from(format!("Published: {}", item.published)),
+        Spans::from(format!("Rating:    {}", item.rating)),
+    ];
+    let block = Block::default()
+        .title(Span::styled(
+            "File Info",
+            Style::default().add_modifier(Modifier::BOLD),
+        ))
+        .borders(Borders::ALL)
+        .border_type(BorderType::Rounded);
+    Paragraph::new(fileinfo_text)
+        .block(block)
+        .alignment(Alignment::Left)
 }
 
 pub fn make_files_widget(filehost_items: &[filehost::Record]) -> Table {
