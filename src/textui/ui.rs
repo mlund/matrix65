@@ -47,15 +47,15 @@ pub fn ui<B: Backend>(f: &mut Frame<B>, app: &mut App) {
     let messages_widget = make_messages_widget(&app.messages);
     f.render_widget(messages_widget, chunks[1]);
 
-    if app.current_widget == AppWidgets::Help {
+    if app.active_widget == AppWidgets::Help {
         render_help_widget(f);
     }
 
-    if app.current_widget == AppWidgets::FileAction {
+    if app.active_widget == AppWidgets::FileAction {
         render_prg_widget(f, &mut app.file_action, app.busy);
     }
 
-    if app.current_widget == AppWidgets::CBMBrowser {
+    if app.active_widget == AppWidgets::CBMBrowser {
         render_cbm_selector_widget(f, &mut app.files.cbm_browser, app.busy);
     }
 }

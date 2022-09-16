@@ -109,7 +109,7 @@ pub struct App {
     /// Status messages presented in the UI
     messages: Vec<String>,
     /// Holds the active widget
-    current_widget: AppWidgets,
+    active_widget: AppWidgets,
     /// Browser for actions on a single file
     file_action: StatefulList<String>,
     /// Set to true when UI is unresponsive
@@ -124,7 +124,7 @@ impl App {
                 "Matrix65 welcomes you to the FileHost!".to_string(),
                 "Press 'h' for help".to_string(),
             ],
-            current_widget: AppWidgets::FileSelector,
+            active_widget: AppWidgets::FileSelector,
             file_action: StatefulList::with_items(vec![
                 "Run".to_string(),
                 "Reset and Run".to_string(),
@@ -136,7 +136,7 @@ impl App {
     }
 
     pub fn set_current_widget(&mut self, widget: AppWidgets) {
-        self.current_widget = widget;
+        self.active_widget = widget;
     }
 
     /// Populate and activate CBM disk browser
@@ -159,7 +159,7 @@ impl App {
     pub fn keypress(&mut self, key: crossterm::event::KeyCode) -> Result<()> {
         match key {
             KeyCode::Char('h') => {
-                if self.current_widget != AppWidgets::Help {
+                if self.active_widget != AppWidgets::Help {
                     self.set_current_widget(AppWidgets::Help);
                 } else {
                     self.set_current_widget(AppWidgets::FileSelector);
@@ -173,10 +173,10 @@ impl App {
             }
 
             KeyCode::Enter => {
-                match self.current_widget {
+                match self.active_widget {
                     // Enter in file selector triggers an action on the selected file
                     AppWidgets::FileSelector => {
-                        self.current_widget = AppWidgets::FileAction;
+                        self.active_widget = AppWidgets::FileAction;
                         if !self.file_action.is_selected() {
                             self.file_action.state.select(Some(0));
                         }
@@ -197,7 +197,7 @@ impl App {
                             _ => {
                                 self.files.run(false)?;
                                 self.busy = false;
-                                self.current_widget = AppWidgets::FileSelector;
+                                self.active_widget = AppWidgets::FileSelector;
                             }
                         };
                         self.file_action.unselect();
@@ -207,7 +207,7 @@ impl App {
             }
             _ => {}
         }
-        match self.current_widget {
+        match self.active_widget {
             AppWidgets::CBMBrowser => self.files.cbm_browser.keypress(key),
             AppWidgets::FileAction => self.file_action.keypress(key),
             AppWidgets::FileSelector => self.files.keypress(key),

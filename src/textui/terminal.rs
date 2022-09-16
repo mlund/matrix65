@@ -87,7 +87,7 @@ pub fn run_app<B: Backend>(terminal: &mut Terminal<B>, mut app: App) -> Result<(
                 Err(error) => {
                     app.add_message(error.to_string().as_str());
                     app.files.cbm_browser.unselect();
-                    app.current_widget = AppWidgets::FileSelector;
+                    app.active_widget = AppWidgets::FileSelector;
                 }
             }
             //app.ok_message();
