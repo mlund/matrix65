@@ -75,8 +75,8 @@ your involvement is very welcome.
    - compiles to lean, efficient binaries, similar to C
    - has lot's of useful _crates_, e.g. for supporting [CBM disk images](https://crates.io/crates/cbm)
    - has **Cargo** which makes dependency handling easy-peasy
-4. In my opinion, higher level language features are more suitable than C for tasks like
-   HTTP requests, JSON parsing, and TUI handling.
+4. In my opinion, higher level language features are more suitable than raw C for tasks like
+   HTTP requests, JSON parsing, and TUI handling (No offence, MEGA65 Team 😉).
 
 ## Resources
 
