@@ -73,7 +73,7 @@ fn run_app<B: Backend>(terminal: &mut Terminal<B>, mut app: App) -> Result<()> {
                 KeyCode::Down => app.next_item(),
                 // We check for ENTER twice in order to allow update display to/from BUSY state
                 KeyCode::Enter => {
-                    if app.cbm_browser.is_selected() {
+                    if app.cbm_browser.is_selected() | app.file_action.is_selected() {
                         app.busy = true;
                         terminal.draw(|f| ui::ui(f, &mut app))?;
                     } else {
@@ -92,12 +92,13 @@ fn run_app<B: Backend>(terminal: &mut Terminal<B>, mut app: App) -> Result<()> {
                 },
                 _ => Ok(()),
             };
+            // Gracefully pick up errors and show them in the msg widget
             match result {
                 Ok(()) => {}
                 Err(error) => {
                     app.add_message(error.to_string().as_str());
-                    app.cbm_browser.unselect();
                     app.active_widget = AppWidgets::FileSelector;
+                    app.unselect_all();
                 }
             }
         }

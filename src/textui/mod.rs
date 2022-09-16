@@ -230,4 +230,10 @@ impl App {
         self.add_message("Reset MEGA65");
         Ok(())
     }
+
+    /// Unselect any selected CBM and file action
+    pub fn unselect_all(&mut self) {
+        self.cbm_browser.unselect();
+        self.file_action.unselect();
+    }
 }
