@@ -67,11 +67,11 @@ fn run_app<B: Backend>(terminal: &mut Terminal<B>, mut app: App) -> Result<()> {
             match key.code {
                 KeyCode::Char('q') => return Ok(()),
                 KeyCode::Char('h') => app.toggle_help(),
-                KeyCode::Esc => app.escape_to_filehost_browser(),
-                KeyCode::Char('R') => {
-                    crate::serial::reset(&mut app.port)?;
-                    app.add_message("Reset MEGA65");
-                }
+                KeyCode::Char('s') => app.sort_filehost(),
+                KeyCode::Esc => app.return_to_filehost(),
+                KeyCode::Up => app.previous_item(),
+                KeyCode::Down => app.next_item(),
+                // We check for ENTER twice in order to allow update display to/from BUSY state
                 KeyCode::Enter => {
                     if app.cbm_browser.is_selected() {
                         app.busy = true;
@@ -82,7 +82,17 @@ fn run_app<B: Backend>(terminal: &mut Terminal<B>, mut app: App) -> Result<()> {
                 }
                 _ => {}
             }
-            match app.keypress(key.code) {
+            let result = match key.code {
+                KeyCode::Char('R') => app.reset(),
+                KeyCode::Enter => match app.active_widget {
+                    AppWidgets::FileSelector => app.select_filehost_item(),
+                    AppWidgets::FileAction => app.select_file_action(),
+                    AppWidgets::CBMBrowser => app.select_cbm_item(),
+                    _ => Ok(()),
+                },
+                _ => Ok(()),
+            };
+            match result {
                 Ok(()) => {}
                 Err(error) => {
                     app.add_message(error.to_string().as_str());
@@ -90,7 +100,6 @@ fn run_app<B: Backend>(terminal: &mut Terminal<B>, mut app: App) -> Result<()> {
                     app.active_widget = AppWidgets::FileSelector;
                 }
             }
-            //app.ok_message();
         }
     }
 }

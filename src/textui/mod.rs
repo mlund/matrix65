@@ -17,7 +17,6 @@ mod ui;
 
 use crate::{filehost, serial};
 use anyhow::Result;
-use crossterm::event::KeyCode;
 use serialport::SerialPort;
 use ui::{StatefulList, StatefulTable};
 
@@ -95,69 +94,34 @@ impl App {
         Ok(())
     }
 
-    // @todo this should be moved to ui.rs so that mod.rs is independent of crossterm
-    pub fn keypress(&mut self, key: crossterm::event::KeyCode) -> Result<()> {
-        match key {
-            KeyCode::Enter => {
-                match self.active_widget {
-                    AppWidgets::FileSelector => self.select_filehost_item()?,
-                    AppWidgets::FileAction => self.select_file_action()?,
-                    AppWidgets::CBMBrowser => self.select_cbm_item()?,
-                    _ => {}
-                }
-            }
-            _ => {}
-        }
+    /// Go to previous item in current widget (typically when pressing arrow up)
+    pub fn previous_item(&mut self) {
         match self.active_widget {
-            AppWidgets::CBMBrowser => match key {
-                KeyCode::Down => {
-                    self.cbm_browser.next();
-                    Ok(())
-                }
-                KeyCode::Up => {
-                    self.cbm_browser.previous();
-                    Ok(())
-                }
-                _ => Ok(()),
-            },
-            AppWidgets::FileAction => match key {
-                KeyCode::Down => {
-                    self.file_action.next();
-                    Ok(())
-                }
-                KeyCode::Up => {
-                    self.file_action.previous();
-                    Ok(())
-                }
-                _ => Ok(()),
-            },
-            AppWidgets::FileSelector => match key {
-                KeyCode::Down => {
-                    self.filetable.next();
-                    Ok(())
-                }
-                KeyCode::Up => {
-                    self.filetable.previous();
-                    Ok(())
-                }
-                KeyCode::Char('s') => {
-                    self.sort_filehost();
-                    Ok(())
-                }
-                _ => Ok(()),
-            },
-            _ => Ok(()),
+            AppWidgets::CBMBrowser => self.cbm_browser.previous(),
+            AppWidgets::FileAction => self.file_action.previous(),
+            AppWidgets::FileSelector => self.filetable.previous(),
+            _ => {}
         }
     }
 
-    fn escape_to_filehost_browser(&mut self) {
+    /// Go to next item in current widget (typically when pressing arrow down)
+    pub fn next_item(&mut self) {
+        match self.active_widget {
+            AppWidgets::CBMBrowser => self.cbm_browser.next(),
+            AppWidgets::FileAction => self.file_action.next(),
+            AppWidgets::FileSelector => self.filetable.next(),
+            _ => {}
+        }
+    }
+
+    fn return_to_filehost(&mut self) {
         self.set_current_widget(AppWidgets::FileSelector);
         self.file_action.unselect();
     }
 
     /// Select currently highlighted file in FileHost browser
     fn select_filehost_item(&mut self) -> Result<(), anyhow::Error> {
-        // when selecting file, go to file action widget 
+        // when selecting file, go to file action widget
         self.active_widget = AppWidgets::FileAction;
         if !self.file_action.is_selected() {
             self.file_action.state.select(Some(0));
@@ -257,6 +221,13 @@ impl App {
         } else {
             return Err(anyhow::Error::msg("Cannot run selection"));
         }
+        Ok(())
+    }
+
+    /// Send reset signal to MEGA65
+    pub fn reset(&mut self) -> Result<()> {
+        crate::serial::reset(&mut self.port)?;
+        self.add_message("Reset MEGA65");
         Ok(())
     }
 }
