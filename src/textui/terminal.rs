@@ -66,6 +66,8 @@ fn run_app<B: Backend>(terminal: &mut Terminal<B>, mut app: App) -> Result<()> {
         if let Event::Key(key) = event::read()? {
             match key.code {
                 KeyCode::Char('q') => return Ok(()),
+                KeyCode::Char('h') => app.toggle_help(),
+                KeyCode::Esc => app.escape_to_filehost_browser(),
                 KeyCode::Char('R') => {
                     crate::serial::reset(&mut app.port)?;
                     app.add_message("Reset MEGA65");

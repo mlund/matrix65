@@ -98,44 +98,11 @@ impl App {
     // @todo this should be moved to ui.rs so that mod.rs is independent of crossterm
     pub fn keypress(&mut self, key: crossterm::event::KeyCode) -> Result<()> {
         match key {
-            KeyCode::Char('h') => self.toggle_help(),
-
-            // Escape jumps back to filehost selector
-            KeyCode::Esc => {
-                self.set_current_widget(AppWidgets::FileSelector);
-                self.file_action.unselect();
-            }
-
             KeyCode::Enter => {
                 match self.active_widget {
-                    // Enter in file selector triggers an action on the selected file
-                    AppWidgets::FileSelector => {
-                        self.active_widget = AppWidgets::FileAction;
-                        if !self.file_action.is_selected() {
-                            self.file_action.state.select(Some(0));
-                        }
-                    }
-                    // Enter in action widget trigges an action on the prg
-                    AppWidgets::FileAction => {
-                        self.set_current_widget(AppWidgets::FileSelector);
-                        match self.file_action.state.selected() {
-                            Some(0) => self.run(false)?, // run
-                            Some(1) => self.run(true)?,  // reset, then run
-                            Some(2) => self.activate_cbm_browser()?,
-                            _ => {}
-                        };
-                        self.file_action.unselect();
-                    }
-                    AppWidgets::CBMBrowser => {
-                        match self.cbm_browser.state.selected() {
-                            _ => {
-                                self.run(false)?;
-                                self.busy = false;
-                                self.active_widget = AppWidgets::FileSelector;
-                            }
-                        };
-                        self.file_action.unselect();
-                    }
+                    AppWidgets::FileSelector => self.select_filehost_item()?,
+                    AppWidgets::FileAction => self.select_file_action()?,
+                    AppWidgets::CBMBrowser => self.select_cbm_item()?,
                     _ => {}
                 }
             }
@@ -181,6 +148,49 @@ impl App {
             },
             _ => Ok(()),
         }
+    }
+
+    fn escape_to_filehost_browser(&mut self) {
+        self.set_current_widget(AppWidgets::FileSelector);
+        self.file_action.unselect();
+    }
+
+    /// Select currently highlighted file in FileHost browser
+    fn select_filehost_item(&mut self) -> Result<(), anyhow::Error> {
+        // when selecting file, go to file action widget 
+        self.active_widget = AppWidgets::FileAction;
+        if !self.file_action.is_selected() {
+            self.file_action.state.select(Some(0));
+        };
+        Ok(())
+    }
+
+    /// Select currently highlighted action in file action widget
+    fn select_file_action(&mut self) -> Result<(), anyhow::Error> {
+        // when done, return to filehost browser
+        self.set_current_widget(AppWidgets::FileSelector);
+        match self.file_action.state.selected() {
+            Some(0) => self.run(false)?, // run
+            Some(1) => self.run(true)?,  // reset, then run
+            Some(2) => self.activate_cbm_browser()?,
+            _ => {}
+        };
+        self.file_action.unselect();
+        Ok(())
+    }
+
+    /// Select currently highlighted item in CBM browser
+    fn select_cbm_item(&mut self) -> Result<(), anyhow::Error> {
+        match self.cbm_browser.state.selected() {
+            _ => {
+                self.run(false)?;
+                self.busy = false;
+                self.active_widget = AppWidgets::FileSelector;
+            }
+        };
+        self.cbm_browser.unselect();
+        self.file_action.unselect();
+        Ok(())
     }
 
     /// Toggles the help pop-up
