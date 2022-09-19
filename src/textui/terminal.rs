@@ -71,7 +71,6 @@ fn run_app<B: Backend>(terminal: &mut Terminal<B>, mut app: App) -> Result<()> {
                 KeyCode::Esc => app.return_to_filehost(),
                 KeyCode::Up => app.previous_item(),
                 KeyCode::Down => app.next_item(),
-                // We check for ENTER twice in order to allow update display to/from BUSY state
                 KeyCode::Enter => {
                     if app.cbm_browser.is_selected() | app.file_action.is_selected() {
                         app.busy = true;
@@ -82,6 +81,7 @@ fn run_app<B: Backend>(terminal: &mut Terminal<B>, mut app: App) -> Result<()> {
                 }
                 _ => {}
             }
+            // These operations *may* fail (invalid port, corrupted file etc.)
             let result = match key.code {
                 KeyCode::Char('R') => app.reset(),
                 KeyCode::Enter => match app.active_widget {
@@ -92,7 +92,7 @@ fn run_app<B: Backend>(terminal: &mut Terminal<B>, mut app: App) -> Result<()> {
                 },
                 _ => Ok(()),
             };
-            // Gracefully pick up errors and show them in the msg widget
+            // Gracefully recover and show error in the msg widget
             match result {
                 Ok(()) => {}
                 Err(error) => {

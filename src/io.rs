@@ -58,6 +58,15 @@ pub fn load_prg(file: &str) -> Result<(u16, Vec<u8>)> {
 ///
 /// The two first bytes form the 16-bit load address, little endian.
 /// Returns found address and removes the first two bytes from the byte vector.
+/// 
+/// Example:
+/// ~~~
+/// let mut bytes = vec!([0x00, 0x10, 0xff]);
+/// let load_address = purge_load_address(&mut bytes);
+/// assert_eq!(load_address, 0x1000);
+/// assert_eq!(bytes.len(), 1);
+/// assert_eq!(bytes[0], 0xff);
+/// ~~~
 fn purge_load_address(bytes: &mut Vec<u8>) -> u16 {
     let load_address = u16::from_le_bytes(
         bytes[0..2]
