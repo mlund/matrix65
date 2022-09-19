@@ -7,7 +7,8 @@
 `matrix65` is a CLI tool, for communicating with the [MEGA65](https://mega65.org/)
 8-bit retro computer using a serial connection.
 It has a mix of features from `m65`, `mega65ftp`, and `M65connect` and is written entirely in **Rust**.
-Disclaimer: This tool is still under development; use it at your own risk.
+
+_Disclaimer: This tool is still under development; use it at your own risk._
 
 ## Getting Started
 
@@ -19,8 +20,9 @@ The easiest way to get started is to [install the Rust compiler](https://www.rus
 cargo install matrix65
 ~~~
 
-There are no dependencies on MacOS and Windows, but on Linux, you may have to install
-`libudev-dev` (Ubuntu) or `systemd-devel` (Fedora).
+There are no other dependencies on MacOS and Windows.
+On Linux, you may have to install `libudev-dev` (Ubuntu) or `systemd-devel` (Fedora).
+To access the serial port, the Linux user may need to be added to the `dialout` group.
 
 ### Using
 
@@ -75,8 +77,8 @@ your involvement is very welcome.
    - compiles to lean, efficient binaries, similar to C
    - has lot's of useful _crates_, e.g. for supporting [CBM disk images](https://crates.io/crates/cbm)
    - has **Cargo** which makes dependency handling easy-peasy
-4. In my opinion, higher level language features are more suitable than raw C for tasks like
-   HTTP requests, JSON parsing, and TUI handling (No offence, MEGA65 Team 😉).
+4. In my opinion, higher level language features in Rust are superior to raw C for tasks like
+   HTTP requests, JSON parsing, and TUI handling (No offence meant, MEGA65 Team🖖).
 
 ## Resources
 

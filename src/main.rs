@@ -14,7 +14,6 @@
 
 use clap::Parser;
 use parse_int::parse;
-//use std::error::Error;
 
 mod filehost;
 mod input;
