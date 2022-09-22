@@ -1,6 +1,7 @@
 [![Crates.io](https://img.shields.io/crates/v/matrix65)](https://crates.io/crates/matrix65)
 [![Rust](https://github.com/mlund/matrix65/actions/workflows/rust.yml/badge.svg)](https://github.com/mlund/matrix65/actions/workflows/rust.yml)
 [![rust-clippy analyze](https://github.com/mlund/matrix65/actions/workflows/rust-clippy.yml/badge.svg)](https://github.com/mlund/matrix65/actions/workflows/rust-clippy.yml)
+[![docs.rs](https://img.shields.io/docsrs/matrix65)](https://docs.rs/matrix65/latest/matrix65)
 
 # Matrix Mode Serial Communicator for MEGA65
 
