@@ -12,7 +12,7 @@
 // see the license for the specific language governing permissions and
 // limitations under the license.
 
-/// Routines related to file/url/terminal I/O
+//! Routines related to file/url/terminal I/O
 
 use cbm::disk;
 use cbm::disk::file::FileOps;
@@ -91,7 +91,7 @@ pub fn cbm_open(diskimage: &str) -> Result<Box<dyn cbm::disk::Disk>> {
     }
 }
 
-/// Load n'th file ffrom CBM disk image and return load address and bytes
+/// Load n'th file from CBM disk image and return load address and bytes
 pub fn cbm_load_file(disk: &dyn cbm::disk::Disk, index: usize) -> Result<(u16, Vec<u8>)> {
     let dir = disk.directory()?;
     let entry = dir.get(index)

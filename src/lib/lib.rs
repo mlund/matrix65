@@ -12,12 +12,13 @@
 // see the license for the specific language governing permissions and
 // limitations under the license.
 
-/// Matrix65 serial communicator library
-/// 
-/// This contains basic features for serial communication with the
-/// MEGA65. Auxiliary functions for IO and access the filehost are
-/// also included.
+//! Matrix65 serial communicator library
+//! 
+//! This contains basic features for serial communication with the
+//! MEGA65. Auxiliary functions for IO and access the filehost are
+//! also included.
 
 pub mod serial;
+
 pub mod io;
 pub mod filehost;

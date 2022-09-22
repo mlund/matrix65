@@ -12,7 +12,7 @@
 // see the license for the specific language governing permissions and
 // limitations under the license.
 
-/// Routines for access the FileHost
+//! Routines for access the MEGA65 FileHost
 
 use anyhow::Result;
 use serde::{Deserialize, Serialize};
