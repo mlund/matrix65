@@ -16,7 +16,7 @@
 
 use cbm::disk;
 use cbm::disk::file::FileOps;
-use log::info;
+use log::debug;
 use std::fs::File;
 use std::io::{self, Read, Write};
 use tempfile::Builder;
@@ -79,6 +79,7 @@ pub fn purge_load_address(bytes: &mut Vec<u8>) -> u16 {
 
 /// Open a CBM disk image from file or url
 pub fn cbm_open(diskimage: &str) -> Result<Box<dyn cbm::disk::Disk>> {
+    debug!("Opening CBM disk {}", diskimage);
     if diskimage.starts_with("http") {
         let bytes = load_bytes_url(diskimage)?;
         let tmp_dir = Builder::new().tempdir()?;
@@ -140,7 +141,7 @@ fn cbm_select_and_load(diskimage: &str) -> Result<(u16, Vec<u8>)> {
 fn load_with_load_address(filename: &str) -> Result<(u16, Vec<u8>)> {
     let mut bytes = load_bytes(filename)?;
     let load_address = purge_load_address(&mut bytes);
-    info!(
+    debug!(
         "Read {} bytes from {}; detected load address = 0x{:x}",
         bytes.len() + 2,
         &filename,
@@ -151,7 +152,7 @@ fn load_with_load_address(filename: &str) -> Result<(u16, Vec<u8>)> {
 
 /// Save bytes to binary file
 pub fn save_binary(filename: &str, bytes: &[u8]) -> Result<(), std::io::Error> {
-    info!("Saving {} bytes to {}", bytes.len(), filename);
+    debug!("Saving {} bytes to {}", bytes.len(), filename);
     File::create(filename)?.write_all(bytes)
 }
 

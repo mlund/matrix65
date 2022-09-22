@@ -16,7 +16,7 @@
 
 use super::io;
 use hex::FromHex;
-use log::{debug, info};
+use log::debug;
 use serialport::SerialPort;
 use std::thread;
 use std::time::Duration;
@@ -78,7 +78,7 @@ pub fn open_port(name: &str, baud_rate: u32) -> Result<Box<dyn SerialPort>> {
 
 /// Reset the MEGA65
 pub fn reset(port: &mut Box<dyn SerialPort>) -> Result<()> {
-    info!("Sending RESET signal");
+    debug!("Sending RESET signal");
     port.write_all("!\n".as_bytes())?;
     thread::sleep(Duration::from_secs(4));
     Ok(())
@@ -86,7 +86,7 @@ pub fn reset(port: &mut Box<dyn SerialPort>) -> Result<()> {
 
 /// If not already there, go to C64 mode via key presses
 pub fn go64(port: &mut Box<dyn SerialPort>) -> Result<()> {
-    info!("Sending GO64");
+    debug!("Sending GO64");
     if is_c65_mode(port)? {
         type_text(port, "go64\ry\r")?;
         thread::sleep(Duration::from_secs(1));
@@ -271,7 +271,7 @@ pub fn mega65_info(port: &mut Box<dyn SerialPort>) -> Result<()> {
 
 /// Load memory from MEGA65 starting at given address
 pub fn read_memory(port: &mut Box<dyn SerialPort>, address: u32, length: usize) -> Result<Vec<u8>> {
-    info!("Loading {} bytes from 0x{:x}", length, address);
+    debug!("Loading {} bytes from 0x{:x}", length, address);
     flush_monitor(port)?;
     stop_cpu(port)?;
     // request memory dump (MEMORY, "M" command)
@@ -322,7 +322,7 @@ fn flush_monitor(port: &mut Box<dyn SerialPort>) -> Result<()> {
 
 /// Write bytes to MEGA65 at 200 kB/s at default baud rate
 pub fn write_memory(port: &mut Box<dyn SerialPort>, address: u16, bytes: &[u8]) -> Result<()> {
-    info!("Writing {} bytes to address 0x{:x}", bytes.len(), address);
+    debug!("Writing {} bytes to address 0x{:x}", bytes.len(), address);
     stop_cpu(port)?;
     port.write_all(format!("l{:x} {:x}\r", address, address + bytes.len() as u16).as_bytes())?;
     thread::sleep(DELAY_WRITE);
