@@ -12,7 +12,7 @@
 // see the license for the specific language governing permissions and
 // limitations under the license.
 
-//! Routines related to file/url/terminal I/O
+//! Routines for file; url; and terminal I/O
 
 use cbm::disk;
 use cbm::disk::file::FileOps;

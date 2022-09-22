@@ -15,10 +15,10 @@
 //! Matrix65 serial communicator library
 //! 
 //! This contains basic features for serial communication with the
-//! MEGA65. Auxiliary functions for IO and access the filehost are
-//! also included.
+//! MEGA65, as well as auxiliary functions for IO and FileHost access.
+//! It is the basis for the CLI tool `matrix65` which is included in
+//! this crate.
 
 pub mod serial;
-
 pub mod io;
 pub mod filehost;

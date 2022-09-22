@@ -12,7 +12,7 @@
 // see the license for the specific language governing permissions and
 // limitations under the license.
 
-//! Serial routines for comminicating with MEGA65
+//! Routines for serial communication with MEGA65
 
 use super::io;
 use hex::FromHex;
