@@ -12,10 +12,10 @@
 // see the license for the specific language governing permissions and
 // limitations under the license.
 
-use clap::Parser;
-use parse_int::parse;
-use matrix65::{serial, io, filehost};
 use anyhow::Result;
+use clap::Parser;
+use matrix65::{filehost, io, serial};
+use parse_int::parse;
 
 mod input;
 mod textui;

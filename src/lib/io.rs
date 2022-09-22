@@ -14,13 +14,13 @@
 
 //! Routines for file; url; and terminal I/O
 
+use anyhow::Result;
 use cbm::disk;
 use cbm::disk::file::FileOps;
 use log::debug;
 use std::fs::File;
 use std::io::{self, Read, Write};
 use tempfile::Builder;
-use anyhow::Result;
 
 /// Fill byte vector from url with compatible error
 fn load_bytes_url(url: &str) -> Result<Vec<u8>> {
@@ -58,7 +58,7 @@ pub fn load_prg(file: &str) -> Result<(u16, Vec<u8>)> {
 ///
 /// The two first bytes form the 16-bit load address, little endian.
 /// Returns found address and removes the first two bytes from the byte vector.
-/// 
+///
 /// Example:
 /// ~~~
 /// let mut bytes : Vec<u8> = vec![0x01, 0x08, 0xff];
@@ -95,7 +95,8 @@ pub fn cbm_open(diskimage: &str) -> Result<Box<dyn cbm::disk::Disk>> {
 /// Load n'th file from CBM disk image and return load address and bytes
 pub fn cbm_load_file(disk: &dyn cbm::disk::Disk, index: usize) -> Result<(u16, Vec<u8>)> {
     let dir = disk.directory()?;
-    let entry = dir.get(index)
+    let entry = dir
+        .get(index)
         .ok_or_else(|| anyhow::Error::msg("invalid selection"))?;
     let mut bytes = Vec::<u8>::new();
     disk.open_file(&entry.filename)?

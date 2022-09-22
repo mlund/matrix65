@@ -18,9 +18,9 @@ use crossterm::{
     terminal::{disable_raw_mode, enable_raw_mode, EnterAlternateScreen, LeaveAlternateScreen},
 };
 
-use matrix65::filehost;
 use crate::textui::{ui, App, AppWidgets};
 use anyhow::Result;
+use matrix65::filehost;
 use serialport::SerialPort;
 use std::io;
 use tui::{

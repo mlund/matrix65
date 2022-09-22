@@ -24,8 +24,8 @@ use tui::{
     Frame,
 };
 
-use matrix65::filehost;
 use crate::textui::{App, AppWidgets};
+use matrix65::filehost;
 
 pub fn ui<B: Backend>(f: &mut Frame<B>, app: &mut App) {
     let chunks = Layout::default()

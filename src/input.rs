@@ -82,5 +82,4 @@ pub struct Args {
     /// Verbose output
     #[clap(long, short = 'v', action)]
     pub verbose: bool,
-    
 }

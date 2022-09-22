@@ -15,9 +15,9 @@
 pub mod terminal;
 mod ui;
 
-use matrix65::{serial, io};
-use matrix65::filehost;
 use anyhow::Result;
+use matrix65::filehost;
+use matrix65::{io, serial};
 use serialport::SerialPort;
 use ui::{StatefulList, StatefulTable};
 
