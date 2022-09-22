@@ -1,7 +1,7 @@
 [package]
 name = "matrix65"
 description = "Matrix Mode Serial Communicator for MEGA65"
-version = "0.1.3"
+version = "0.1.2"
 edition = "2021"
 authors = ["Mikael Lund <lyssky@icloud.com>"]
 homepage = "https://github.com/mlund/matrix65"

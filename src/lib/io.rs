@@ -28,7 +28,7 @@ fn load_bytes_url(url: &str) -> Result<Vec<u8>> {
 }
 
 /// Load file or url into byte vector
-fn load_bytes(filename: &str) -> Result<Vec<u8>> {
+pub fn load_bytes(filename: &str) -> Result<Vec<u8>> {
     let mut bytes = Vec::new();
     if filename.starts_with("http") {
         bytes = load_bytes_url(filename)?;
@@ -139,7 +139,7 @@ fn cbm_select_and_load(diskimage: &str) -> Result<(u16, Vec<u8>)> {
 }
 
 /// Load a prg file or url into a byte vector and detect load address
-fn load_with_load_address(filename: &str) -> Result<(u16, Vec<u8>)> {
+pub fn load_with_load_address(filename: &str) -> Result<(u16, Vec<u8>)> {
     let mut bytes = load_bytes(filename)?;
     let load_address = purge_load_address(&mut bytes);
     debug!(

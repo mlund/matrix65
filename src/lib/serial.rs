@@ -53,7 +53,7 @@ pub fn is_c65_mode(port: &mut Box<dyn SerialPort>) -> Result<bool> {
 }
 
 /// Print available serial ports
-pub fn print_ports() {
+fn print_ports() {
     debug!("Detecting serial ports");
     serialport::available_ports()
         .expect("No serial ports found!")
