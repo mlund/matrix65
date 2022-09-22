@@ -14,14 +14,11 @@
 
 use clap::Parser;
 use parse_int::parse;
-
-mod filehost;
-mod input;
-mod io;
-mod serial;
-mod textui;
-
+use matrix65::{serial, io, filehost};
 use anyhow::Result;
+
+mod input;
+mod textui;
 
 fn main() {
     if let Err(err) = do_main() {
@@ -59,7 +56,7 @@ fn do_main() -> Result<()> {
             let bytes = serial::read_memory(&mut port, parse::<u32>(&address)?, length)?;
             match outfile {
                 Some(name) => io::save_binary(&name, &bytes)?,
-                None => io::hexdump(&bytes, 8),
+                None => matrix65::io::hexdump(&bytes, 8),
             };
         }
 

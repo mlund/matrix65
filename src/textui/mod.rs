@@ -15,7 +15,8 @@
 pub mod terminal;
 mod ui;
 
-use crate::{filehost, serial};
+use matrix65::{serial, io};
+use matrix65::filehost;
 use anyhow::Result;
 use serialport::SerialPort;
 use ui::{StatefulList, StatefulTable};
@@ -82,7 +83,7 @@ impl App {
         self.busy = false;
         self.set_current_widget(AppWidgets::CBMBrowser);
         let url = self.selected_url();
-        self.cbm_disk = Some(crate::io::cbm_open(&url)?);
+        self.cbm_disk = Some(io::cbm_open(&url)?);
         if self.cbm_disk.is_some() {
             let dir = self.cbm_disk.as_ref().unwrap().directory()?;
             let files: Vec<String> = dir
@@ -208,7 +209,7 @@ impl App {
         } else if url.ends_with(".d81") & self.cbm_disk.is_some() & self.cbm_browser.is_selected() {
             let selected_file = self.cbm_browser.state.selected().unwrap();
             let (load_address, bytes) =
-                crate::io::cbm_load_file(self.cbm_disk.as_ref().unwrap().as_ref(), selected_file)?;
+                io::cbm_load_file(self.cbm_disk.as_ref().unwrap().as_ref(), selected_file)?;
             serial::handle_prg_from_bytes(
                 &mut self.port,
                 &bytes,

@@ -12,6 +12,8 @@
 // see the license for the specific language governing permissions and
 // limitations under the license.
 
+/// Routines for access the FileHost
+
 use anyhow::Result;
 use serde::{Deserialize, Serialize};
 
@@ -36,7 +38,7 @@ pub struct Record {
 }
 
 impl Record {
-    pub fn _print(&self) {
+    fn _print(&self) {
         println!("{} {}", self.kind, self.title);
     }
 

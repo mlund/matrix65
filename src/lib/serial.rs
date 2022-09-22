@@ -12,7 +12,7 @@
 // see the license for the specific language governing permissions and
 // limitations under the license.
 
-use crate::io;
+use super::io;
 use hex::FromHex;
 use log::{debug, info};
 use serialport::SerialPort;

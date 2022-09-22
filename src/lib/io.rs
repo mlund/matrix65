@@ -13,13 +13,13 @@
 // limitations under the license.
 
 /// Routines related to file/url/terminal I/O
+
 use cbm::disk;
 use cbm::disk::file::FileOps;
 use log::info;
 use std::fs::File;
 use std::io::{self, Read, Write};
 use tempfile::Builder;
-
 use anyhow::Result;
 
 /// Fill byte vector from url with compatible error
@@ -61,13 +61,13 @@ pub fn load_prg(file: &str) -> Result<(u16, Vec<u8>)> {
 /// 
 /// Example:
 /// ~~~
-/// let mut bytes = vec!([0x00, 0x10, 0xff]);
-/// let load_address = purge_load_address(&mut bytes);
-/// assert_eq!(load_address, 0x1000);
+/// let mut bytes : Vec<u8> = vec![0x01, 0x08, 0xff];
+/// let load_address = matrix65::io::purge_load_address(&mut bytes);
+/// assert_eq!(load_address, 0x0801);
 /// assert_eq!(bytes.len(), 1);
 /// assert_eq!(bytes[0], 0xff);
 /// ~~~
-fn purge_load_address(bytes: &mut Vec<u8>) -> u16 {
+pub fn purge_load_address(bytes: &mut Vec<u8>) -> u16 {
     let load_address = u16::from_le_bytes(
         bytes[0..2]
             .try_into()

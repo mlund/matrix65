@@ -24,7 +24,7 @@ use tui::{
     Frame,
 };
 
-use crate::filehost;
+use matrix65::filehost;
 use crate::textui::{App, AppWidgets};
 
 pub fn ui<B: Backend>(f: &mut Frame<B>, app: &mut App) {
