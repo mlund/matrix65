@@ -13,6 +13,7 @@
 // limitations under the license.
 
 use clap::{Parser, Subcommand};
+use matrix65::serial::DEFAULT_BAUD_RATE;
 
 /// Matrix Mode Serial Communicator for MEGA65
 #[derive(Debug, Subcommand)]
@@ -76,7 +77,7 @@ pub struct Args {
     pub port: String,
 
     /// Serial communication speed in bits/s
-    #[clap(short = 'b', long, default_value_t = 2000000)]
+    #[clap(short = 'b', long, default_value_t = DEFAULT_BAUD_RATE)]
     pub baud: u32,
 
     /// Verbose output

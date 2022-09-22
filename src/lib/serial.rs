@@ -27,6 +27,8 @@ use anyhow::Result;
 const DELAY_WRITE: Duration = Duration::from_millis(20);
 /// Delay between sending key presses
 const DELAY_KEYPRESS: Duration = DELAY_WRITE;
+/// Default serial speed in bits per second
+pub const DEFAULT_BAUD_RATE: u32 = 2000000;
 
 /// Stop the MEGA65 CPU
 fn stop_cpu(port: &mut Box<dyn SerialPort>) -> Result<()> {
