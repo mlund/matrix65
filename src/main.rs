@@ -28,8 +28,13 @@ fn main() {
 }
 
 fn do_main() -> Result<()> {
-    pretty_env_logger::init();
     let args = input::Args::parse();
+
+    if args.verbose {
+        std::env::set_var("RUST_LOG", "Trace");
+    }
+    pretty_env_logger::init();
+
     let mut port = serial::open_port(&args.port, args.baud)?;
 
     match args.command {

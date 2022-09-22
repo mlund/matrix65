@@ -78,4 +78,9 @@ pub struct Args {
     /// Serial communication speed in bits/s
     #[clap(short = 'b', long, default_value_t = 2000000)]
     pub baud: u32,
+
+    /// Verbose output
+    #[clap(long, short = 'v', action)]
+    pub verbose: bool,
+    
 }
