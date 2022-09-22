@@ -15,12 +15,12 @@
 //! Routines for serial communication with MEGA65
 
 use super::io;
+use anyhow::Result;
 use hex::FromHex;
 use log::debug;
 use serialport::SerialPort;
 use std::thread;
 use std::time::Duration;
-use anyhow::Result;
 
 /// Delay after writing to serial port
 const DELAY_WRITE: Duration = Duration::from_millis(20);
@@ -351,7 +351,7 @@ pub fn handle_prg_from_bytes(
         0x0801 => go64(port)?,
         _ => {
             return Err(anyhow::Error::msg("unsupported load address"));
-        },
+        }
     }
     write_memory(port, load_address, bytes)?;
     if run {
