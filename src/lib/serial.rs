@@ -20,7 +20,6 @@ use log::debug;
 use serialport::SerialPort;
 use std::thread;
 use std::time::Duration;
-
 use anyhow::Result;
 
 /// Delay after writing to serial port
@@ -350,7 +349,9 @@ pub fn handle_prg_from_bytes(
     match load_address {
         0x2001 => go65(port)?,
         0x0801 => go64(port)?,
-        _ => todo!("arbitrary load address"),
+        _ => {
+            return Err(anyhow::Error::msg("unsupported load address"));
+        },
     }
     write_memory(port, load_address, bytes)?;
     if run {
