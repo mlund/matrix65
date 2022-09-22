@@ -31,7 +31,7 @@ const DELAY_KEYPRESS: Duration = DELAY_WRITE;
 pub const DEFAULT_BAUD_RATE: u32 = 2000000;
 
 /// Stop the MEGA65 CPU
-fn stop_cpu(port: &mut Box<dyn SerialPort>) -> Result<()> {
+pub fn stop_cpu(port: &mut Box<dyn SerialPort>) -> Result<()> {
     port.write_all("t1\r".as_bytes())?;
     port.flush()?;
     thread::sleep(DELAY_WRITE);
@@ -39,7 +39,7 @@ fn stop_cpu(port: &mut Box<dyn SerialPort>) -> Result<()> {
 }
 
 /// Start the MEGA65 CPU after being halted
-fn start_cpu(port: &mut Box<dyn SerialPort>) -> Result<()> {
+pub fn start_cpu(port: &mut Box<dyn SerialPort>) -> Result<()> {
     port.write_all("t0\r".as_bytes())?;
     port.flush()?;
     thread::sleep(DELAY_WRITE);
@@ -253,7 +253,7 @@ pub fn type_text(port: &mut Box<dyn SerialPort>, text: &str) -> Result<()> {
 
 /// Get MEGA65 info (@todo under construction)
 #[allow(dead_code)]
-pub fn mega65_info(port: &mut Box<dyn SerialPort>) -> Result<()> {
+fn mega65_info(port: &mut Box<dyn SerialPort>) -> Result<()> {
     debug!("Requesting serial monitor info");
     port.write_all("h\n".as_bytes())?;
     thread::sleep(DELAY_WRITE);
@@ -309,7 +309,7 @@ pub fn read_memory(port: &mut Box<dyn SerialPort>, address: u32, length: usize) 
 /// Try to empty the monitor by reading one byte until nothing more can be read
 ///
 /// There must be more elegant ways to do this...
-fn flush_monitor(port: &mut Box<dyn SerialPort>) -> Result<()> {
+pub fn flush_monitor(port: &mut Box<dyn SerialPort>) -> Result<()> {
     port.write_all(&[0x15, b'#', b'\r'])?;
     let mut byte = [0u8];
     loop {
