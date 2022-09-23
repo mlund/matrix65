@@ -94,7 +94,7 @@ pub struct Args {
     #[clap(short = 'b', long, default_value_t = DEFAULT_BAUD_RATE)]
     pub baud: u32,
 
-    /// Verbose output. Tune with e.g. RUST_LOG=Trace
+    /// Verbose output. See more with e.g. RUST_LOG=Trace
     #[clap(long, short = 'v', action)]
     pub verbose: bool,
 }
