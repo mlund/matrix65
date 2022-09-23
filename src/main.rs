@@ -16,6 +16,7 @@ use anyhow::Result;
 use clap::Parser;
 use matrix65::{filehost, io, serial};
 use parse_int::parse;
+use pretty_env_logger::env_logger::DEFAULT_FILTER_ENV;
 
 mod input;
 mod textui;
@@ -30,8 +31,8 @@ fn main() {
 fn do_main() -> Result<()> {
     let args = input::Args::parse();
 
-    if args.verbose {
-        std::env::set_var("RUST_LOG", "Trace");
+    if args.verbose && std::env::var(DEFAULT_FILTER_ENV).is_err() {
+        std::env::set_var(DEFAULT_FILTER_ENV, "Debug");
     }
     pretty_env_logger::init();
 
