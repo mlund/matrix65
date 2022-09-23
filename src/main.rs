@@ -66,6 +66,25 @@ fn do_main() -> Result<()> {
             };
         }
 
+        input::Commands::Poke {
+            address,
+            file,
+            value,
+        } => {
+            let bytes = match file.is_some() {
+                true => matrix65::io::load_bytes(&file.unwrap())?,
+                false => vec![value.ok_or(anyhow::Error::msg("VALUE required for poking"))?],
+            };
+            let parsed_address = parse::<u16>(&address)?;
+            if parsed_address.checked_add(bytes.len() as u16 - 1).is_none() {
+                // Merely a safety measure. Is this needed?
+                return Err(anyhow::Error::msg(
+                    "poking outside the 16-bit address space is currently unsupported",
+                ));
+            }
+            matrix65::serial::write_memory(&mut port, parsed_address, &bytes)?;
+        }
+
         input::Commands::Filehost {} => {
             let mut entries: Vec<_> = filehost::get_file_list()?
                 .iter()

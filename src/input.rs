@@ -61,6 +61,20 @@ pub enum Commands {
         outfile: Option<String>,
     },
 
+    /// Poke into memory with value or file
+    #[clap(arg_required_else_help = true)]
+    Poke {
+        /// Destination address, e.g. 4096 (dec) or 0x1000 (hex)
+        #[clap(long, short = '@')]
+        address: String,
+        /// Write bytes from file
+        #[clap(long, short = 'f')]
+        file: Option<String>,
+        /// Byte value to place into memory
+        #[clap(value_parser, conflicts_with = "file")]
+        value: Option<u8>,
+    },
+
     /// Access FileHost
     #[clap()]
     Filehost {},
