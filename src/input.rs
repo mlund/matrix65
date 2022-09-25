@@ -75,9 +75,13 @@ pub enum Commands {
         value: Option<u8>,
     },
 
-    /// Access FileHost
+    /// FileHost browser
     #[clap()]
     Filehost {},
+
+    /// Interactive shell environment
+    #[clap()]
+    Cmd {},
 }
 
 #[derive(Parser)]
