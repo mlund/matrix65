@@ -13,7 +13,8 @@ pub fn start_repl(port: &mut Box<dyn SerialPort>) -> Result<()> {
     let context = Context { port };
     let mut repl = Repl::new(context)
         .with_name("matrix65")
-        .with_description("Matrix Mode Serial Communicator for MEGA65")
+        .with_version(env!("CARGO_PKG_VERSION"))
+        .with_description(env!("CARGO_PKG_DESCRIPTION"))
         .with_banner("Welcome to matrix65!")
         .with_command(Command::new("reset").about("Reset MEGA65"), reset)
         .with_command(
@@ -25,7 +26,7 @@ pub fn start_repl(port: &mut Box<dyn SerialPort>) -> Result<()> {
 
 /// Wrap reset command
 fn reset(_args: ArgMatches, context: &mut Context) -> Result<Option<String>> {
-    match matrix65::serial::reset(context.port) {
+    match commands::reset(context.port, false) {
         Err(err) => Err(reedline_repl_rs::Error::IllegalDefaultError(
             err.to_string(),
         )),
