@@ -14,6 +14,8 @@
 
 //! Routines for serial communication with MEGA65
 
+use crate::LoadAddress;
+
 use super::io;
 use anyhow::Result;
 use hex::FromHex;
@@ -97,10 +99,10 @@ pub fn go64(port: &mut Box<dyn SerialPort>) -> Result<()> {
 
 /// If not already there, go to C65 mode via a reset
 pub fn go65(port: &mut Box<dyn SerialPort>) -> Result<()> {
-    match is_c65_mode(port)? {
-        true => Ok(()),
-        false => reset(port),
+    if !is_c65_mode(port)? {
+        reset(port)?;
     }
+    Ok(())
 }
 
 /// Translate and type a single letter on MEGA65
@@ -339,7 +341,7 @@ pub fn write_memory(port: &mut Box<dyn SerialPort>, address: u16, bytes: &[u8]) 
 pub fn handle_prg_from_bytes(
     port: &mut Box<dyn SerialPort>,
     bytes: &[u8],
-    load_address: u16,
+    load_address: LoadAddress,
     reset_before_run: bool,
     run: bool,
 ) -> Result<()> {
@@ -347,13 +349,13 @@ pub fn handle_prg_from_bytes(
         reset(port)?;
     }
     match load_address {
-        0x2001 => go65(port)?,
-        0x0801 => go64(port)?,
+        LoadAddress::Commodore65 => go65(port)?,
+        LoadAddress::Commodore64 => go64(port)?,
         _ => {
             return Err(anyhow::Error::msg("unsupported load address"));
         }
     }
-    write_memory(port, load_address, bytes)?;
+    write_memory(port, load_address.value(), bytes)?;
     if run {
         type_text(port, "run\r")?;
     }

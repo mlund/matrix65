@@ -35,7 +35,7 @@ pub enum LoadAddress {
 #[allow(dead_code)]
 impl LoadAddress {
     /// Construct new LoadAddress from 16-bit value
-    /// 
+    ///
     /// Example:
     /// ~~~
     /// use matrix65::LoadAddress;
@@ -51,7 +51,7 @@ impl LoadAddress {
         }
     }
     /// Returns the 16-bit load address
-    /// 
+    ///
     /// Example:
     /// ~~~
     /// use matrix65::LoadAddress;

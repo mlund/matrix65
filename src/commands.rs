@@ -33,9 +33,9 @@ pub fn poke(
     address: String,
     port: &mut Box<dyn SerialPort>,
 ) -> Result<(), anyhow::Error> {
-    let bytes = match file.is_some() {
-        true => matrix65::io::load_bytes(&file.unwrap())?,
-        false => vec![value.ok_or_else(|| anyhow::Error::msg("VALUE required for poking"))?],
+    let bytes = match file {
+        Some(f) => matrix65::io::load_bytes(&f)?,
+        None => vec![value.ok_or_else(|| anyhow::Error::msg("VALUE required for poking"))?],
     };
     let parsed_address = parse::<u16>(&address)?;
     if parsed_address.checked_add(bytes.len() as u16 - 1).is_none() {

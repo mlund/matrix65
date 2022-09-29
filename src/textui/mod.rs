@@ -147,15 +147,16 @@ impl App {
     /// Select currently highlighted item in CBM browser
     fn select_cbm_item(&mut self) -> Result<(), anyhow::Error> {
         match self.cbm_browser.state.selected() {
-            _ => {
+            Some(_) => {
                 self.run(false)?;
                 self.busy = false;
                 self.active_widget = AppWidgets::FileSelector;
+                self.cbm_browser.unselect();
+                self.file_action.unselect();
+                Ok(())
             }
-        };
-        self.cbm_browser.unselect();
-        self.file_action.unselect();
-        Ok(())
+            None => Err(anyhow::Error::msg("No CBM file selected"))
+        }
     }
 
     /// Toggles the help pop-up
