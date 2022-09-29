@@ -65,7 +65,7 @@ pub fn load_prg(file: &str) -> Result<(LoadAddress, Vec<u8>)> {
 /// ~~~
 /// let mut bytes : Vec<u8> = vec![0x01, 0x08, 0xff];
 /// let load_address = matrix65::io::purge_load_address(&mut bytes);
-/// assert_eq!(load_address, 0x0801);
+/// assert_eq!(load_address.value(), 0x0801);
 /// assert_eq!(bytes.len(), 1);
 /// assert_eq!(bytes[0], 0xff);
 /// ~~~
