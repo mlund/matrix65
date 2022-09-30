@@ -59,7 +59,7 @@ impl LoadAddress {
     /// ~~~
     /// use matrix65::LoadAddress;
     /// let mut bytes : Vec<u8> = vec![0x01, 0x08, 0xff];
-    /// let load_address = LoadAddress::from_bytes(&bytes);
+    /// let load_address = LoadAddress::from_bytes(&bytes).unwrap();
     /// assert_eq!(load_address.value(), 0x0801);
     /// ~~~
     pub fn from_bytes(bytes: &[u8]) -> Result<LoadAddress> {
