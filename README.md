@@ -7,7 +7,8 @@
 
 `matrix65` is a CLI tool, for communicating with the [MEGA65](https://mega65.org/)
 8-bit retro computer using a serial connection.
-It has a mix of features from `m65`, `mega65ftp`, and `M65connect` and is written entirely in **Rust**.
+It has a mix of features from `m65`, `mega65_ftp`, and `M65connect` and is written entirely in **Rust**.
+Here is a short [demonstration video](https://www.youtube.com/watch?v=dUvXLtUUC-Y).
 
 _Disclaimer: This tool is still under development; use it at your own risk._
 
@@ -62,7 +63,10 @@ your involvement is very welcome.
 - [x] Send sequence of key-presses
 - [x] Reset MEGA65
 - [x] Peek into memory; hexdump, binary file dump
+- [x] Poke into memory; single value or from file
 - [x] Logging with e.g. `export RUST_LOG=info`
+- [x] REPL command interface (experimental)
+- [ ] Disassembly
 - [ ] Transfer and mount disk images
 - [ ] Load at arbitrary address and optionally start with `SYS`
 - [ ] Memory dumps in YAML format
