@@ -155,7 +155,7 @@ impl App {
                 self.file_action.unselect();
                 Ok(())
             }
-            None => Err(anyhow::Error::msg("No CBM file selected"))
+            None => Err(anyhow::Error::msg("No CBM file selected")),
         }
     }
 

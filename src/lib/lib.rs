@@ -23,6 +23,8 @@ pub mod filehost;
 pub mod io;
 pub mod serial;
 
+use anyhow::Result;
+
 /// Load address for C64/C65 files
 #[allow(dead_code)]
 #[derive(Debug, PartialEq, Eq)]
@@ -49,6 +51,20 @@ impl LoadAddress {
             0x2001 => LoadAddress::Commodore65,
             _ => LoadAddress::Custom(address),
         }
+    }
+
+    /// Extract load address from first two bytes, little endian.
+    ///
+    /// Example:
+    /// ~~~
+    /// use matrix65::LoadAddress;
+    /// let mut bytes : Vec<u8> = vec![0x01, 0x08, 0xff];
+    /// let load_address = LoadAddress::from_bytes(&bytes);
+    /// assert_eq!(load_address.value(), 0x0801);
+    /// ~~~
+    pub fn from_bytes(bytes: &[u8]) -> Result<LoadAddress> {
+        let address = u16::from_le_bytes(bytes[0..2].try_into()?);
+        Ok(Self::new(address))
     }
     /// Returns the 16-bit load address
     ///

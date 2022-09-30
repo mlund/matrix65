@@ -49,7 +49,7 @@ pub fn start_cpu(port: &mut Box<dyn SerialPort>) -> Result<()> {
 
 /// Detect if in C65 mode
 pub fn is_c65_mode(port: &mut Box<dyn SerialPort>) -> Result<bool> {
-    let byte = read_memory(port, 0xffd3030, 1)?[0];
+    let byte = peek(port, 0xffd3030)?;
     Ok(byte == 0x64)
 }
 
@@ -312,7 +312,6 @@ pub fn peek(port: &mut Box<dyn SerialPort>, address: u32) -> Result<u8> {
     let bytes = read_memory(port, address, 1)?;
     Ok(bytes[0])
 }
-
 
 /// Try to empty the monitor by reading one byte until nothing more can be read
 ///

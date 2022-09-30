@@ -69,14 +69,10 @@ pub fn load_prg(file: &str) -> Result<(LoadAddress, Vec<u8>)> {
 /// assert_eq!(bytes.len(), 1);
 /// assert_eq!(bytes[0], 0xff);
 /// ~~~
-pub fn purge_load_address(bytes: &mut Vec<u8>) -> LoadAddress {
-    let address = u16::from_le_bytes(
-        bytes[0..2]
-            .try_into()
-            .expect("error extracting load address"),
-    );
+pub fn purge_load_address(bytes: &mut Vec<u8>) -> Result<LoadAddress> {
+    let address = LoadAddress::from_bytes(bytes)?;
     *bytes = bytes[2..].to_vec();
-    LoadAddress::new(address)
+    Ok(address)
 }
 
 /// Open a CBM disk image from file or url
@@ -104,7 +100,7 @@ pub fn cbm_load_file(disk: &dyn cbm::disk::Disk, index: usize) -> Result<(LoadAd
     disk.open_file(&entry.filename)?
         .reader()?
         .read_to_end(&mut bytes)?;
-    let load_address = purge_load_address(&mut bytes);
+    let load_address = purge_load_address(&mut bytes)?;
     Ok((load_address, bytes))
 }
 
@@ -136,14 +132,14 @@ fn cbm_select_and_load(diskimage: &str) -> Result<(LoadAddress, Vec<u8>)> {
     disk.open_file(&entry.filename)?
         .reader()?
         .read_to_end(&mut bytes)?;
-    let load_address = purge_load_address(&mut bytes);
+    let load_address = purge_load_address(&mut bytes)?;
     Ok((load_address, bytes))
 }
 
 /// Load a prg file or url into a byte vector and detect load address
 pub fn load_with_load_address(filename: &str) -> Result<(LoadAddress, Vec<u8>)> {
     let mut bytes = load_bytes(filename)?;
-    let load_address = purge_load_address(&mut bytes);
+    let load_address = purge_load_address(&mut bytes)?;
     debug!(
         "Read {} bytes from {}; detected load address = 0x{:x}",
         bytes.len() + 2,
