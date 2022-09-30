@@ -307,6 +307,13 @@ pub fn read_memory(port: &mut Box<dyn SerialPort>, address: u32, length: usize) 
     Ok(bytes)
 }
 
+/// Read single byte from MEGA65
+pub fn peek(port: &mut Box<dyn SerialPort>, address: u32) -> Result<u8> {
+    let bytes = read_memory(port, address, 1)?;
+    Ok(bytes[0])
+}
+
+
 /// Try to empty the monitor by reading one byte until nothing more can be read
 ///
 /// There must be more elegant ways to do this...
@@ -323,7 +330,7 @@ pub fn flush_monitor(port: &mut Box<dyn SerialPort>) -> Result<()> {
     Ok(())
 }
 
-/// Write bytes to MEGA65 at 200 kB/s at default baud rate
+/// Write bytes to MEGA65
 pub fn write_memory(port: &mut Box<dyn SerialPort>, address: u16, bytes: &[u8]) -> Result<()> {
     debug!("Writing {} byte(s) to address 0x{:x}", bytes.len(), address);
     stop_cpu(port)?;
@@ -333,6 +340,11 @@ pub fn write_memory(port: &mut Box<dyn SerialPort>, address: u16, bytes: &[u8]) 
     thread::sleep(DELAY_WRITE);
     start_cpu(port)?;
     Ok(())
+}
+
+/// Write single byte to MEGA65
+pub fn poke(port: &mut Box<dyn SerialPort>, destination: u16, value: u8) -> Result<()> {
+    write_memory(port, destination, &[value])
 }
 
 /// Transfer to MEGA65 and optionally run PRG
