@@ -59,6 +59,9 @@ pub enum Commands {
         /// Output to binary file instead of hexdump
         #[clap(long, short = 'o')]
         outfile: Option<String>,
+        /// Disassemble instead of hexdump (currently only 6502)
+        #[clap(long = "dasm", short = 'd', action, conflicts_with = "outfile")]
+        disassemble: bool,
     },
 
     /// Poke into memory with value or file

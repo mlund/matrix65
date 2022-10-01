@@ -18,11 +18,19 @@ pub fn peek(
     address: String,
     length: usize,
     outfile: Option<String>,
+    disassemble: bool,
 ) -> Result<(), anyhow::Error> {
-    let bytes = serial::read_memory(port, parse::<u32>(&address)?, length)?;
+    let start_address = parse::<u32>(&address)?;
+    let bytes = serial::read_memory(port, start_address, length)?;
     match outfile {
         Some(name) => io::save_binary(&name, &bytes)?,
-        None => matrix65::io::hexdump(&bytes, 8),
+        None => {
+            if disassemble {
+                matrix65::io::disassemble(&bytes, start_address);
+            } else {
+                matrix65::io::hexdump(&bytes, 8);
+            }
+        },
     };
     Ok(())
 }

@@ -53,7 +53,8 @@ fn do_main() -> Result<()> {
             address,
             length,
             outfile,
-        } => commands::peek(&mut port, address, length, outfile)?,
+            disassemble,
+        } => commands::peek(&mut port, address, length, outfile, disassemble)?,
 
         input::Commands::Poke {
             address,

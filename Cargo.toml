@@ -38,6 +38,7 @@ cbm = "0.1"
 tempfile = "3.3"
 anyhow = "1.0.64"
 reedline-repl-rs = "1.0.2"
+disasm6502 = "0.2"
 
 [profile.release]
 strip = true     # Automatically strip symbols from the binary.

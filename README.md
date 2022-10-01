@@ -66,7 +66,7 @@ your involvement is very welcome.
 - [x] Poke into memory; single value or from file
 - [x] Logging with e.g. `export RUST_LOG=info`
 - [x] REPL command interface (experimental)
-- [ ] Disassembly
+- [x] Disassembly (currently only 6502 opcodes)
 - [ ] Transfer and mount disk images
 - [ ] Load at arbitrary address and optionally start with `SYS`
 - [ ] Memory dumps in YAML format

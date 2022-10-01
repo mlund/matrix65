@@ -14,6 +14,7 @@
 
 //! Routines for file; url; and terminal I/O
 
+use disasm6502;
 use anyhow::Result;
 use cbm::disk;
 use cbm::disk::file::FileOps;
@@ -164,4 +165,11 @@ pub fn hexdump(bytes: &[u8], bytes_per_line: usize) {
         }
         println!();
     });
+}
+/// Print disassembled bytes
+pub fn disassemble(bytes: &[u8], start_address: u32) {
+    let instructions = disasm6502::from_addr_array(bytes, start_address as u16).unwrap();
+    for i in instructions {
+        println!("{}", i);
+    }
 }
