@@ -30,7 +30,7 @@ pub fn peek(
             } else {
                 matrix65::io::hexdump(&bytes, 8);
             }
-        },
+        }
     };
     Ok(())
 }

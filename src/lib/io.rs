@@ -14,10 +14,10 @@
 
 //! Routines for file; url; and terminal I/O
 
-use disasm6502;
 use anyhow::Result;
 use cbm::disk;
 use cbm::disk::file::FileOps;
+use disasm6502;
 use log::debug;
 use std::fs::File;
 use std::io::{self, Read, Write};

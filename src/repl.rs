@@ -35,11 +35,9 @@ pub fn start_repl(port: &mut Box<dyn SerialPort>) -> Result<()> {
     repl.run()
 }
 
-/// Wrap peek command
-fn peek(_args: ArgMatches, context: &mut Context) -> Result<Option<String>> {
-    let address = _args.value_of("address").unwrap().to_string();
-    let length = _args.value_of("length").unwrap_or("1").to_string().parse::<usize>()?;
-    match commands::peek(context.port, address, length, None, true) {
+/// Helper function to convert error type
+fn handle_result(result: core::result::Result<(), anyhow::Error>) -> Result<Option<String>> {
+    match result {
         Err(err) => Err(reedline_repl_rs::Error::IllegalDefaultError(
             err.to_string(),
         )),
@@ -47,53 +45,39 @@ fn peek(_args: ArgMatches, context: &mut Context) -> Result<Option<String>> {
     }
 }
 
+/// Wrap peek command
+fn peek(_args: ArgMatches, context: &mut Context) -> Result<Option<String>> {
+    let address = _args.value_of("address").unwrap().to_string();
+    let length = _args
+        .value_of("length")
+        .unwrap_or("1")
+        .to_string()
+        .parse::<usize>()?;
+    let result = commands::peek(context.port, address, length, None, true);
+    handle_result(result)
+}
 
 /// Wrap reset command
 fn reset(_args: ArgMatches, context: &mut Context) -> Result<Option<String>> {
-    match commands::reset(context.port, false) {
-        Err(err) => Err(reedline_repl_rs::Error::IllegalDefaultError(
-            err.to_string(),
-        )),
-        Ok(()) => Ok(None),
-    }
+    handle_result(commands::reset(context.port, false))
 }
 
 /// Wrap go64 command
 fn go64(_args: ArgMatches, context: &mut Context) -> Result<Option<String>> {
-    match serial::go64(context.port) {
-        Err(err) => Err(reedline_repl_rs::Error::IllegalDefaultError(
-            err.to_string(),
-        )),
-        Ok(()) => Ok(None),
-    }
+    handle_result(serial::go64(context.port))
 }
 
 /// Wrap stop cpu command
 fn stop(_args: ArgMatches, context: &mut Context) -> Result<Option<String>> {
-    match serial::stop_cpu(context.port) {
-        Err(err) => Err(reedline_repl_rs::Error::IllegalDefaultError(
-            err.to_string(),
-        )),
-        Ok(()) => Ok(None),
-    }
+    handle_result(serial::stop_cpu(context.port))
 }
 
 /// Wrap start cpu command
 fn start(_args: ArgMatches, context: &mut Context) -> Result<Option<String>> {
-    match serial::start_cpu(context.port) {
-        Err(err) => Err(reedline_repl_rs::Error::IllegalDefaultError(
-            err.to_string(),
-        )),
-        Ok(()) => Ok(None),
-    }
+    handle_result(serial::start_cpu(context.port))
 }
 
 /// Wrap filehost command
 fn filehost(_args: ArgMatches, context: &mut Context) -> Result<Option<String>> {
-    match commands::filehost(context.port) {
-        Err(err) => Err(reedline_repl_rs::Error::IllegalDefaultError(
-            err.to_string(),
-        )),
-        Ok(()) => Ok(None),
-    }
+    handle_result(commands::filehost(context.port))
 }
