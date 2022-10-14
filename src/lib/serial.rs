@@ -23,6 +23,7 @@ use log::debug;
 use serialport::SerialPort;
 use std::thread;
 use std::time::Duration;
+use std::io::{Read, Write};
 
 /// Delay after writing to serial port
 const DELAY_WRITE: Duration = Duration::from_millis(20);
@@ -32,7 +33,7 @@ const DELAY_KEYPRESS: Duration = DELAY_WRITE;
 pub const DEFAULT_BAUD_RATE: u32 = 2000000;
 
 /// Stop the MEGA65 CPU
-pub fn stop_cpu(port: &mut Box<dyn SerialPort>) -> Result<()> {
+pub fn stop_cpu(port: &mut dyn Write) -> Result<()> {
     port.write_all("t1\r".as_bytes())?;
     port.flush()?;
     thread::sleep(DELAY_WRITE);
@@ -40,7 +41,7 @@ pub fn stop_cpu(port: &mut Box<dyn SerialPort>) -> Result<()> {
 }
 
 /// Start the MEGA65 CPU after being halted
-pub fn start_cpu(port: &mut Box<dyn SerialPort>) -> Result<()> {
+pub fn start_cpu(port: &mut dyn Write) -> Result<()> {
     port.write_all("t0\r".as_bytes())?;
     port.flush()?;
     thread::sleep(DELAY_WRITE);
@@ -48,7 +49,7 @@ pub fn start_cpu(port: &mut Box<dyn SerialPort>) -> Result<()> {
 }
 
 /// Detect if in C65 mode
-pub fn is_c65_mode(port: &mut Box<dyn SerialPort>) -> Result<bool> {
+pub fn is_c65_mode<T: Read + Write>(port: &mut T) -> Result<bool> {
     let byte = peek(port, 0xffd3030)?;
     Ok(byte == 0x64)
 }
@@ -80,7 +81,7 @@ pub fn open_port(name: &str, baud_rate: u32) -> Result<Box<dyn SerialPort>> {
 }
 
 /// Reset the MEGA65
-pub fn reset(port: &mut Box<dyn SerialPort>) -> Result<()> {
+pub fn reset(port: &mut dyn Write) -> Result<()> {
     debug!("Sending RESET signal");
     port.write_all("!\n".as_bytes())?;
     thread::sleep(Duration::from_secs(4));
@@ -88,7 +89,7 @@ pub fn reset(port: &mut Box<dyn SerialPort>) -> Result<()> {
 }
 
 /// If not already there, go to C64 mode via key presses
-pub fn go64(port: &mut Box<dyn SerialPort>) -> Result<()> {
+pub fn go64<T: Read + Write>(port: &mut T) -> Result<()> {
     debug!("Sending GO64");
     if is_c65_mode(port)? {
         type_text(port, "go64\ry\r")?;
@@ -98,7 +99,7 @@ pub fn go64(port: &mut Box<dyn SerialPort>) -> Result<()> {
 }
 
 /// If not already there, go to C65 mode via a reset
-pub fn go65(port: &mut Box<dyn SerialPort>) -> Result<()> {
+pub fn go65<T: Read + Write>(port: &mut T) -> Result<()> {
     if !is_c65_mode(port)? {
         reset(port)?;
     }
@@ -106,7 +107,7 @@ pub fn go65(port: &mut Box<dyn SerialPort>) -> Result<()> {
 }
 
 /// Translate and type a single letter on MEGA65
-fn type_key(port: &mut Box<dyn SerialPort>, mut key: char) -> Result<()> {
+fn type_key(port: &mut dyn Write, mut key: char) -> Result<()> {
     let mut c1: u8 = 0x7f;
     let mut c2 = match key {
         '!' => {
@@ -232,14 +233,14 @@ fn type_key(port: &mut Box<dyn SerialPort>, mut key: char) -> Result<()> {
 }
 
 /// Call this when done typing
-fn stop_typing(port: &mut Box<dyn SerialPort>) -> Result<()> {
+fn stop_typing(port: &mut dyn Write) -> Result<()> {
     port.write_all("sffd3615 7f 7f 7f \n".as_bytes())?;
     thread::sleep(DELAY_WRITE);
     Ok(())
 }
 
 /// Send array of key presses
-pub fn type_text(port: &mut Box<dyn SerialPort>, text: &str) -> Result<()> {
+pub fn type_text(port: &mut dyn Write, text: &str) -> Result<()> {
     // Manually translate user defined escape codes:
     // https://stackoverflow.com/questions/72583983/interpreting-escape-characters-in-a-string-read-from-user-input
     debug!("Typing text");
@@ -254,7 +255,7 @@ pub fn type_text(port: &mut Box<dyn SerialPort>, text: &str) -> Result<()> {
 
 /// Get MEGA65 info (@todo under construction)
 #[allow(dead_code)]
-fn mega65_info(port: &mut Box<dyn SerialPort>) -> Result<()> {
+fn mega65_info<T: Read + Write>(port: &mut T) -> Result<()> {
     debug!("Requesting serial monitor info");
     port.write_all("h\n".as_bytes())?;
     thread::sleep(DELAY_WRITE);
@@ -273,7 +274,7 @@ fn mega65_info(port: &mut Box<dyn SerialPort>) -> Result<()> {
 }
 
 /// Load memory from MEGA65 starting at given address
-pub fn read_memory(port: &mut Box<dyn SerialPort>, address: u32, length: usize) -> Result<Vec<u8>> {
+pub fn read_memory<T: Read + Write>(port: &mut T, address: u32, length: usize) -> Result<Vec<u8>> {
     debug!("Loading {} bytes from 0x{:x}", length, address);
     flush_monitor(port)?;
     stop_cpu(port)?;
@@ -308,7 +309,7 @@ pub fn read_memory(port: &mut Box<dyn SerialPort>, address: u32, length: usize) 
 }
 
 /// Read single byte from MEGA65
-pub fn peek(port: &mut Box<dyn SerialPort>, address: u32) -> Result<u8> {
+pub fn peek<T: Read + Write>(port: &mut T, address: u32) -> Result<u8> {
     let bytes = read_memory(port, address, 1)?;
     Ok(bytes[0])
 }
@@ -316,7 +317,7 @@ pub fn peek(port: &mut Box<dyn SerialPort>, address: u32) -> Result<u8> {
 /// Try to empty the monitor by reading one byte until nothing more can be read
 ///
 /// There must be more elegant ways to do this...
-pub fn flush_monitor(port: &mut Box<dyn SerialPort>) -> Result<()> {
+pub fn flush_monitor<T: Read + Write>(port: &mut T) -> Result<()> {
     port.write_all(&[0x15, b'#', b'\r'])?;
     let mut byte = [0u8];
     loop {
@@ -330,7 +331,7 @@ pub fn flush_monitor(port: &mut Box<dyn SerialPort>) -> Result<()> {
 }
 
 /// Write bytes to MEGA65
-pub fn write_memory(port: &mut Box<dyn SerialPort>, address: u16, bytes: &[u8]) -> Result<()> {
+pub fn write_memory<T: Read + Write>(port: &mut T, address: u16, bytes: &[u8]) -> Result<()> {
     debug!("Writing {} byte(s) to address 0x{:x}", bytes.len(), address);
     stop_cpu(port)?;
     port.write_all(format!("l{:x} {:x}\r", address, address + bytes.len() as u16).as_bytes())?;
@@ -342,15 +343,15 @@ pub fn write_memory(port: &mut Box<dyn SerialPort>, address: u16, bytes: &[u8]) 
 }
 
 /// Write single byte to MEGA65
-pub fn poke(port: &mut Box<dyn SerialPort>, destination: u16, value: u8) -> Result<()> {
+pub fn poke<T: Read + Write>(port: &mut T, destination: u16, value: u8) -> Result<()> {
     write_memory(port, destination, &[value])
 }
 
 /// Transfer to MEGA65 and optionally run PRG
 ///
 /// C64/C65 modes are selected from the load address
-pub fn handle_prg_from_bytes(
-    port: &mut Box<dyn SerialPort>,
+pub fn handle_prg_from_bytes<T: Read + Write>(
+    port: &mut T,
     bytes: &[u8],
     load_address: LoadAddress,
     reset_before_run: bool,
@@ -377,8 +378,8 @@ pub fn handle_prg_from_bytes(
 ///
 /// Here `file` can be a local file or a url. CBM disk images are allowed and
 /// C64/C65 modes are detected from load address.
-pub fn handle_prg(
-    port: &mut Box<dyn SerialPort>,
+pub fn handle_prg<T: Read + Write>(
+    port: &mut T,
     file: &str,
     reset_before_run: bool,
     run: bool,

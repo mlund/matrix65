@@ -4,8 +4,9 @@ use matrix65::io;
 use matrix65::serial;
 use parse_int::parse;
 use serialport::SerialPort;
+use std::io::{Read, Write};
 
-pub fn reset(port: &mut Box<dyn SerialPort>, c64: bool) -> Result<(), anyhow::Error> {
+pub fn reset<T: Read + Write>(port: &mut T, c64: bool) -> Result<(), anyhow::Error> {
     serial::reset(port)?;
     if c64 {
         serial::go64(port)?
@@ -13,8 +14,8 @@ pub fn reset(port: &mut Box<dyn SerialPort>, c64: bool) -> Result<(), anyhow::Er
     Ok(())
 }
 
-pub fn peek(
-    port: &mut Box<dyn SerialPort>,
+pub fn peek<T: Read + Write>(
+    port: &mut T,
     address: String,
     length: usize,
     outfile: Option<String>,
@@ -35,11 +36,11 @@ pub fn peek(
     Ok(())
 }
 
-pub fn poke(
+pub fn poke<T: Read + Write>(
     file: Option<String>,
     value: Option<u8>,
     address: String,
-    port: &mut Box<dyn SerialPort>,
+    port: &mut T,
 ) -> Result<(), anyhow::Error> {
     let bytes = match file {
         Some(f) => matrix65::io::load_bytes(&f)?,
