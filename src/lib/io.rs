@@ -36,9 +36,9 @@ pub fn load_bytes(filename: &str) -> Result<Vec<u8>> {
     if filename.starts_with("http") {
         bytes = load_bytes_url(filename)?;
     } else {
-        File::open(&filename)?.read_to_end(&mut bytes)?;
+        File::open(filename)?.read_to_end(&mut bytes)?;
     }
-    assert!(bytes.len() < 0xffff);
+    assert!(bytes.len() < u16::MAX as usize);
     Ok(bytes)
 }
 

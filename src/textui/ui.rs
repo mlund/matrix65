@@ -353,7 +353,7 @@ impl<T> StatefulList<T> {
     }
 
     pub fn is_selected(&self) -> bool {
-        self.state.selected() != None
+        self.state.selected().is_some()
     }
 
     pub fn unselect(&mut self) {
@@ -404,7 +404,7 @@ impl<T> StatefulTable<T> {
 
     #[allow(dead_code)]
     pub fn is_selected(&self) -> bool {
-        self.state.selected() != None
+        self.state.selected().is_some()
     }
 
     #[allow(dead_code)]
