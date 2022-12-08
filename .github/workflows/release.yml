@@ -1,5 +1,11 @@
 name: Build release binaries
 on:
+  workflow_dispatch:
+    inputs:
+      input:
+        description: "Manually build release binaries"
+        required: false
+        default: "World"
   release:
     types: [created, edited]
 
