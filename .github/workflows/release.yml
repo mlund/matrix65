@@ -1,6 +1,7 @@
+name: Build release binaries
 on:
   release:
-    types: [created]
+    types: [created, edited]
 
 jobs:
   release:
