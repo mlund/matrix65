@@ -103,17 +103,31 @@ impl LoadAddress {
     }
 }
 
+/// Example:
+/// ~~~
+/// use matrix65::LoadAddress;
+/// let value: u16 = LoadAddress::Commodore64.into();
+/// assert_eq!(value, 0x0801);
+/// assert_eq!(u16::from(LoadAddress::Commodore64), 0x0801);
+/// ~~~
+impl From<LoadAddress> for u16 {
+    fn from(load_address: LoadAddress) -> u16 {
+        load_address.value()
+    }
+}
+
+/// Example:
+/// ~~~
+/// use matrix65::LoadAddress;
+/// assert_eq!(LoadAddress::from(0x0401), LoadAddress::PET);
+/// assert_eq!(LoadAddress::from(0x0801), LoadAddress::Commodore64);
+/// assert_eq!(LoadAddress::from(0x1001), LoadAddress::Commodore16);
+/// assert_eq!(LoadAddress::from(0x1c01), LoadAddress::Commodore128);
+/// assert_eq!(LoadAddress::from(0x2001), LoadAddress::Commodore65);
+/// assert_eq!(LoadAddress::from(0x1000), LoadAddress::Custom(0x1000));
+/// ~~~
 impl From<u16> for LoadAddress {
-    /// Example:
-    /// ~~~
-    /// use matrix65::LoadAddress;
-    /// assert_eq!(LoadAddress::from(0x0401), LoadAddress::PET);
-    /// assert_eq!(LoadAddress::from(0x0801), LoadAddress::Commodore64);
-    /// assert_eq!(LoadAddress::from(0x1001), LoadAddress::Commodore16);
-    /// assert_eq!(LoadAddress::from(0x1c01), LoadAddress::Commodore128);
-    /// assert_eq!(LoadAddress::from(0x2001), LoadAddress::Commodore65);
-    /// assert_eq!(LoadAddress::from(0x1000), LoadAddress::Custom(0x1000));
-    /// ~~~
+ 
     fn from(address: u16) -> Self {
         LoadAddress::new(address)
     }
