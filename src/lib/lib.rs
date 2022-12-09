@@ -25,11 +25,14 @@ pub mod serial;
 
 use anyhow::Result;
 
-/// Load address for C64/C16/C128/C65 files
+/// Load address for Commodore files
 #[allow(dead_code)]
 #[derive(Debug, PartialEq, Eq)]
 pub enum LoadAddress {
+    PET,
+    /// Shared for Commodore 64 and Commander X16
     Commodore64,
+    /// Shared for Commodore 16, VIC20, and Plus 4
     Commodore16,
     Commodore128,
     Commodore65,
@@ -43,6 +46,7 @@ impl LoadAddress {
     /// Example:
     /// ~~~
     /// use matrix65::LoadAddress;
+    /// assert_eq!(LoadAddress::new(0x0401), LoadAddress::PET);
     /// assert_eq!(LoadAddress::new(0x0801), LoadAddress::Commodore64);
     /// assert_eq!(LoadAddress::new(0x1001), LoadAddress::Commodore16);
     /// assert_eq!(LoadAddress::new(0x1c01), LoadAddress::Commodore128);
@@ -51,6 +55,7 @@ impl LoadAddress {
     /// ~~~
     pub fn new(address: u16) -> LoadAddress {
         match address {
+            0x0401 => LoadAddress::PET,
             0x0801 => LoadAddress::Commodore64,
             0x1001 => LoadAddress::Commodore16,
             0x1c01 => LoadAddress::Commodore128,
@@ -77,6 +82,7 @@ impl LoadAddress {
     /// Example:
     /// ~~~
     /// use matrix65::LoadAddress;
+    /// assert_eq!(LoadAddress::PET.value(), 0x0401);
     /// assert_eq!(LoadAddress::Commodore64.value(), 0x0801);
     /// assert_eq!(LoadAddress::Commodore16.value(), 0x1001);
     /// assert_eq!(LoadAddress::Commodore128.value(), 0x01c01);
@@ -85,6 +91,7 @@ impl LoadAddress {
     /// ~~~
     pub fn value(&self) -> u16 {
         match *self {
+            LoadAddress::PET => 0x0401,
             LoadAddress::Commodore64 => 0x0801,
             LoadAddress::Commodore16 => 0x1001,
             LoadAddress::Commodore128 => 0x1c01,
