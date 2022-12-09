@@ -25,7 +25,7 @@ pub mod serial;
 
 use anyhow::Result;
 
-/// Load address for Commodore files
+/// Load address for Commodore PRG files
 #[allow(dead_code)]
 #[derive(Debug, PartialEq, Eq)]
 pub enum LoadAddress {
@@ -53,7 +53,7 @@ impl LoadAddress {
     /// assert_eq!(LoadAddress::new(0x2001), LoadAddress::Commodore65);
     /// assert_eq!(LoadAddress::new(0x1000), LoadAddress::Custom(0x1000));
     /// ~~~
-    pub fn new(address: u16) -> LoadAddress {
+    pub const fn new(address: u16) -> LoadAddress {
         match address {
             0x0401 => LoadAddress::PET,
             0x0801 => LoadAddress::Commodore64,
@@ -89,7 +89,7 @@ impl LoadAddress {
     /// assert_eq!(LoadAddress::Commodore65.value(), 0x2001);
     /// assert_eq!(LoadAddress::Custom(0x1000).value(), 0x1000);
     /// ~~~
-    pub fn value(&self) -> u16 {
+    pub const fn value(&self) -> u16 {
         match *self {
             LoadAddress::PET => 0x0401,
             LoadAddress::Commodore64 => 0x0801,
