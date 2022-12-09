@@ -44,7 +44,7 @@ pub enum LoadAddress {
 impl LoadAddress {
     /// Construct new LoadAddress from 16-bit value
     ///
-    /// Example:
+    /// Examples:
     /// ~~~
     /// use matrix65::LoadAddress;
     /// assert_eq!(LoadAddress::new(0x0401), LoadAddress::PET);
@@ -52,7 +52,7 @@ impl LoadAddress {
     /// assert_eq!(LoadAddress::new(0x1001), LoadAddress::Commodore16);
     /// assert_eq!(LoadAddress::new(0x1c01), LoadAddress::Commodore128);
     /// assert_eq!(LoadAddress::new(0x2001), LoadAddress::Commodore65);
-    /// assert_eq!(LoadAddress::new(0x1000), LoadAddress::Custom(0x1000));
+    /// assert_eq!(LoadAddress::new(0xc000), LoadAddress::Custom(0xc000));
     /// ~~~
     pub const fn new(address: u16) -> LoadAddress {
         match address {
@@ -67,7 +67,7 @@ impl LoadAddress {
 
     /// Extract load address from first two bytes, little endian.
     ///
-    /// Example:
+    /// Examples:
     /// ~~~
     /// use matrix65::LoadAddress;
     /// let bytes: [u8; 3] = [0x01, 0x08, 0xff];
@@ -81,7 +81,7 @@ impl LoadAddress {
     }
     /// Returns the 16-bit load address
     ///
-    /// Example:
+    /// Examples:
     /// ~~~
     /// use matrix65::LoadAddress;
     /// assert_eq!(LoadAddress::PET.value(), 0x0401);
@@ -89,7 +89,7 @@ impl LoadAddress {
     /// assert_eq!(LoadAddress::Commodore16.value(), 0x1001);
     /// assert_eq!(LoadAddress::Commodore128.value(), 0x01c01);
     /// assert_eq!(LoadAddress::Commodore65.value(), 0x2001);
-    /// assert_eq!(LoadAddress::Custom(0x1000).value(), 0x1000);
+    /// assert_eq!(LoadAddress::Custom(0xc000).value(), 0xc000);
     /// ~~~
     pub const fn value(&self) -> u16 {
         match *self {
@@ -103,12 +103,12 @@ impl LoadAddress {
     }
 }
 
-/// Example:
+/// Examples:
 /// ~~~
 /// use matrix65::LoadAddress;
+/// assert_eq!(u16::from(LoadAddress::Commodore64), 0x0801);
 /// let value: u16 = LoadAddress::Commodore64.into();
 /// assert_eq!(value, 0x0801);
-/// assert_eq!(u16::from(LoadAddress::Commodore64), 0x0801);
 /// ~~~
 impl From<LoadAddress> for u16 {
     fn from(load_address: LoadAddress) -> u16 {
@@ -116,7 +116,7 @@ impl From<LoadAddress> for u16 {
     }
 }
 
-/// Example:
+/// Examples:
 /// ~~~
 /// use matrix65::LoadAddress;
 /// assert_eq!(LoadAddress::from(0x0401), LoadAddress::PET);
@@ -124,10 +124,12 @@ impl From<LoadAddress> for u16 {
 /// assert_eq!(LoadAddress::from(0x1001), LoadAddress::Commodore16);
 /// assert_eq!(LoadAddress::from(0x1c01), LoadAddress::Commodore128);
 /// assert_eq!(LoadAddress::from(0x2001), LoadAddress::Commodore65);
-/// assert_eq!(LoadAddress::from(0x1000), LoadAddress::Custom(0x1000));
+/// assert_eq!(LoadAddress::from(0xc000), LoadAddress::Custom(0xc000));
+/// 
+/// let address: LoadAddress = 0x0801.into();
+/// assert_eq!(address, LoadAddress::Commodore64);
 /// ~~~
 impl From<u16> for LoadAddress {
- 
     fn from(address: u16) -> Self {
         LoadAddress::new(address)
     }
