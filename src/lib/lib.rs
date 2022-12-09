@@ -24,6 +24,7 @@ pub mod io;
 pub mod serial;
 
 use anyhow::Result;
+use std::convert::From;
 
 /// Load address for Commodore PRG files
 #[allow(dead_code)]
@@ -71,6 +72,7 @@ impl LoadAddress {
     /// use matrix65::LoadAddress;
     /// let bytes: [u8; 3] = [0x01, 0x08, 0xff];
     /// let load_address = LoadAddress::from_bytes(&bytes).unwrap();
+    /// assert_eq!(load_address, LoadAddress::Commodore64);
     /// assert_eq!(load_address.value(), 0x0801);
     /// ~~~
     pub fn from_bytes(bytes: &[u8]) -> Result<LoadAddress> {
@@ -98,5 +100,21 @@ impl LoadAddress {
             LoadAddress::Commodore65 => 0x2001,
             LoadAddress::Custom(address) => address,
         }
+    }
+}
+
+impl From<u16> for LoadAddress {
+    /// Example:
+    /// ~~~
+    /// use matrix65::LoadAddress;
+    /// assert_eq!(LoadAddress::from(0x0401), LoadAddress::PET);
+    /// assert_eq!(LoadAddress::from(0x0801), LoadAddress::Commodore64);
+    /// assert_eq!(LoadAddress::from(0x1001), LoadAddress::Commodore16);
+    /// assert_eq!(LoadAddress::from(0x1c01), LoadAddress::Commodore128);
+    /// assert_eq!(LoadAddress::from(0x2001), LoadAddress::Commodore65);
+    /// assert_eq!(LoadAddress::from(0x1000), LoadAddress::Custom(0x1000));
+    /// ~~~
+    fn from(address: u16) -> Self {
+        LoadAddress::new(address)
     }
 }
