@@ -25,11 +25,12 @@ pub mod serial;
 
 use anyhow::Result;
 
-/// Load address for C64/C65 files
+/// Load address for C64/C16/C128/C65 files
 #[allow(dead_code)]
 #[derive(Debug, PartialEq, Eq)]
 pub enum LoadAddress {
     Commodore64,
+    Commodore16,
     Commodore128,
     Commodore65,
     Custom(u16),
@@ -43,6 +44,7 @@ impl LoadAddress {
     /// ~~~
     /// use matrix65::LoadAddress;
     /// assert_eq!(LoadAddress::new(0x0801), LoadAddress::Commodore64);
+    /// assert_eq!(LoadAddress::new(0x1001), LoadAddress::Commodore16);
     /// assert_eq!(LoadAddress::new(0x1c01), LoadAddress::Commodore128);
     /// assert_eq!(LoadAddress::new(0x2001), LoadAddress::Commodore65);
     /// assert_eq!(LoadAddress::new(0x1000), LoadAddress::Custom(0x1000));
@@ -50,6 +52,7 @@ impl LoadAddress {
     pub fn new(address: u16) -> LoadAddress {
         match address {
             0x0801 => LoadAddress::Commodore64,
+            0x1001 => LoadAddress::Commodore16,
             0x1c01 => LoadAddress::Commodore128,
             0x2001 => LoadAddress::Commodore65,
             _ => LoadAddress::Custom(address),
@@ -75,6 +78,7 @@ impl LoadAddress {
     /// ~~~
     /// use matrix65::LoadAddress;
     /// assert_eq!(LoadAddress::Commodore64.value(), 0x0801);
+    /// assert_eq!(LoadAddress::Commodore16.value(), 0x1001);
     /// assert_eq!(LoadAddress::Commodore128.value(), 0x01c01);
     /// assert_eq!(LoadAddress::Commodore65.value(), 0x2001);
     /// assert_eq!(LoadAddress::Custom(0x1000).value(), 0x1000);
@@ -82,6 +86,7 @@ impl LoadAddress {
     pub fn value(&self) -> u16 {
         match *self {
             LoadAddress::Commodore64 => 0x0801,
+            LoadAddress::Commodore16 => 0x1001,
             LoadAddress::Commodore128 => 0x1c01,
             LoadAddress::Commodore65 => 0x2001,
             LoadAddress::Custom(address) => address,
