@@ -37,6 +37,7 @@ pub enum LoadAddress {
     /// Shared for Commodore 16, VIC20, and Plus 4
     Commodore16,
     Commodore128,
+    /// Shared for Commodore 65 and MEGA65
     Commodore65,
     Custom(u16),
 }
