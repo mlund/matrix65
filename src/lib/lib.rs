@@ -25,6 +25,7 @@ pub mod serial;
 
 use anyhow::Result;
 use std::convert::From;
+use std::fmt;
 
 /// Load address for Commodore PRG files
 #[allow(dead_code)]
@@ -132,5 +133,11 @@ impl From<LoadAddress> for u16 {
 impl From<u16> for LoadAddress {
     fn from(address: u16) -> Self {
         LoadAddress::new(address)
+    }
+}
+
+impl fmt::Display for LoadAddress {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+        write!(f, "0x{:x}", self.value())
     }
 }
