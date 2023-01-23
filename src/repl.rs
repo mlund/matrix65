@@ -1,17 +1,17 @@
 use crate::commands;
 use crate::serial;
+use matrix65::M65Communicator;
 use reedline_repl_rs::clap::{Arg, ArgMatches, Command};
 use reedline_repl_rs::{Repl, Result};
-use serialport::SerialPort;
 
 /// Provide a state to be passed to each command.
 /// Main funtion is to store the serial port
 struct Context<'a> {
-    pub port: &'a mut Box<dyn SerialPort>,
+    pub comm: &'a mut Box<dyn M65Communicator>,
 }
 
-pub fn start_repl(port: &mut Box<dyn SerialPort>) -> Result<()> {
-    let context = Context { port };
+pub fn start_repl(comm: &mut Box<dyn M65Communicator>) -> Result<()> {
+    let context = Context { comm: comm };
     let mut repl = Repl::new(context)
         .with_name("matrix65")
         .with_version(env!("CARGO_PKG_VERSION"))
@@ -53,31 +53,31 @@ fn peek(_args: ArgMatches, context: &mut Context) -> Result<Option<String>> {
         .unwrap_or("1")
         .to_string()
         .parse::<usize>()?;
-    let result = commands::peek(context.port, address, length, None, true);
+    let result = commands::peek(context.comm, address, length, None, true);
     handle_result(result)
 }
 
 /// Wrap reset command
 fn reset(_args: ArgMatches, context: &mut Context) -> Result<Option<String>> {
-    handle_result(commands::reset(context.port, false))
+    handle_result(commands::reset(context.comm, false))
 }
 
 /// Wrap go64 command
 fn go64(_args: ArgMatches, context: &mut Context) -> Result<Option<String>> {
-    handle_result(serial::go64(context.port))
+    handle_result(serial::go64(context.comm))
 }
 
 /// Wrap stop cpu command
 fn stop(_args: ArgMatches, context: &mut Context) -> Result<Option<String>> {
-    handle_result(serial::stop_cpu(context.port))
+    handle_result(serial::stop_cpu(context.comm))
 }
 
 /// Wrap start cpu command
 fn start(_args: ArgMatches, context: &mut Context) -> Result<Option<String>> {
-    handle_result(serial::start_cpu(context.port))
+    handle_result(serial::start_cpu(context.comm))
 }
 
 /// Wrap filehost command
 fn filehost(_args: ArgMatches, context: &mut Context) -> Result<Option<String>> {
-    handle_result(commands::filehost(context.port))
+    handle_result(commands::filehost(context.comm))
 }

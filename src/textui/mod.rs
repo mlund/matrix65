@@ -16,9 +16,8 @@ pub mod terminal;
 mod ui;
 
 use anyhow::Result;
-use matrix65::filehost;
-use matrix65::{io, serial};
-use serialport::SerialPort;
+use matrix65::{filehost, M65Communicator};
+use matrix65::{io};
 use ui::{StatefulList, StatefulTable};
 
 /// Specified the currently active widget of the TUI
@@ -46,13 +45,13 @@ pub struct App {
     /// Status messages presented in the UI
     messages: Vec<String>,
     /// Serial port to communicate on
-    port: Box<dyn SerialPort>,
+    comm: Box<dyn M65Communicator>,
     /// Determines how to sort the filehost table
     toggle_sort: bool,
 }
 
 impl App {
-    fn new(port: &mut Box<dyn SerialPort>, filehost_items: &[filehost::Record]) -> App {
+    fn new(comm: Box<dyn M65Communicator>, filehost_items: &[filehost::Record]) -> App {
         App {
             messages: vec![
                 "Matrix65 welcomes you to the FileHost!".to_string(),
@@ -67,7 +66,7 @@ impl App {
             ]),
             busy: false,
             filetable: StatefulTable::with_items(filehost_items.to_vec()),
-            port: port.try_clone().unwrap(),
+            comm: comm,
             toggle_sort: false,
             cbm_disk: None,
             cbm_browser: StatefulList::with_items(Vec::<String>::new()),
@@ -206,13 +205,12 @@ impl App {
     pub fn run(&mut self, reset_before_run: bool) -> Result<()> {
         let url = self.selected_url();
         if url.ends_with(".prg") {
-            serial::handle_prg(&mut self.port, &url, reset_before_run, true)?;
+            self.comm.handle_prg(&url, reset_before_run, true)?;
         } else if url.ends_with(".d81") & self.cbm_disk.is_some() & self.cbm_browser.is_selected() {
             let selected_file = self.cbm_browser.state.selected().unwrap();
             let (load_address, bytes) =
                 io::cbm_load_file(self.cbm_disk.as_ref().unwrap().as_ref(), selected_file)?;
-            serial::handle_prg_from_bytes(
-                &mut self.port,
+            self.comm.handle_prg_from_bytes(
                 &bytes,
                 load_address,
                 reset_before_run,
@@ -228,7 +226,7 @@ impl App {
 
     /// Send reset signal to MEGA65
     pub fn reset(&mut self) -> Result<()> {
-        crate::serial::reset(&mut self.port)?;
+        self.comm.reset()?;
         self.add_message("Reset MEGA65");
         Ok(())
     }

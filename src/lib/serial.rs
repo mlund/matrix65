@@ -25,6 +25,46 @@ use std::thread;
 use std::time::Duration;
 use std::io::{Read, Write};
 
+pub struct M65Serial {
+    pub port: Box<dyn SerialPort>,
+}
+
+impl M65Serial {
+    /// Open serial port - show available ports and stop if invalid
+    pub fn open(name: &str, baud_rate: u32) -> Result<M65Serial> {
+        debug!("Opening serial port {}", name);
+        match serialport::new(name, baud_rate)
+        .timeout(Duration::from_millis(10))
+        .open()
+        {
+            Ok(port) => Ok(M65Serial{port : port}),
+            Err(err) => {
+                eprintln!("Invalid serial port, try one of these?\n");
+                print_ports();
+                Err(err.into())
+            }
+        }
+    }
+}
+
+impl crate::M65Communicator for M65Serial {
+    fn read_memory(&mut self, address: u32, length: usize) -> Result<Vec<u8>> {
+        read_memory(&mut self.port, address, length)
+    }
+    fn write_memory(&mut self, address: u16, bytes: &[u8]) -> Result<()> {
+        write_memory(&mut self.port, address, bytes)
+    }
+    fn flush(&mut self) -> Result<()> {
+        flush_monitor(&mut self.port)
+    }
+    fn reset(&mut self) -> Result<()> {
+        reset(&mut self.port)
+    }
+    fn type_text(&mut self, text: &str) -> Result<()> {
+        type_text(&mut self.port, text)
+    }
+}
+
 /// Delay after writing to serial port
 const DELAY_WRITE: Duration = Duration::from_millis(20);
 /// Delay between sending key presses
@@ -58,9 +98,9 @@ pub fn is_c65_mode<T: Read + Write>(port: &mut T) -> Result<bool> {
 fn print_ports() {
     debug!("Detecting serial ports");
     serialport::available_ports()
-        .expect("No serial ports found!")
-        .iter()
-        .for_each(|port| println!("{}", port.port_name));
+    .expect("No serial ports found!")
+    .iter()
+    .for_each(|port| println!("{}", port.port_name));
     println!();
 }
 
@@ -68,8 +108,8 @@ fn print_ports() {
 pub fn open_port(name: &str, baud_rate: u32) -> Result<Box<dyn SerialPort>> {
     debug!("Opening serial port {}", name);
     match serialport::new(name, baud_rate)
-        .timeout(Duration::from_millis(10))
-        .open()
+    .timeout(Duration::from_millis(10))
+    .open()
     {
         Ok(port) => Ok(port),
         Err(err) => {
@@ -152,7 +192,7 @@ fn type_key(port: &mut dyn Write, mut key: char) -> Result<()> {
         }
         _ => 0x7f,
     };
-
+    
     match key as u8 {
         0x14 => c1 = 0x00, // INST/DEL
         0x0d => c1 = 0x01, // Return
@@ -226,7 +266,7 @@ fn type_key(port: &mut dyn Write, mut key: char) -> Result<()> {
         0x0c => c1 = 0x3f,
         _ => c1 = 0x7f,
     }
-
+    
     port.write_all(format!("sffd3615 {:02x} {:02x}\n", c1, c2).as_bytes())?;
     thread::sleep(DELAY_KEYPRESS);
     Ok(())
@@ -246,9 +286,9 @@ pub fn type_text(port: &mut dyn Write, text: &str) -> Result<()> {
     debug!("Typing text");
     thread::sleep(DELAY_KEYPRESS);
     text.replace("\\r", "\r")
-        .replace("\\n", "\r")
-        .chars()
-        .for_each(|key| type_key(port, key).unwrap_or(()));
+    .replace("\\n", "\r")
+    .chars()
+    .for_each(|key| type_key(port, key).unwrap_or(()));
     stop_typing(port)?;
     Ok(())
 }
@@ -259,7 +299,7 @@ fn mega65_info<T: Read + Write>(port: &mut T) -> Result<()> {
     debug!("Requesting serial monitor info");
     port.write_all("h\n".as_bytes())?;
     thread::sleep(DELAY_WRITE);
-
+    
     let mut buffer = Vec::new();
     buffer.resize(65, 0);
     port.read_exact(&mut buffer)?;
@@ -281,15 +321,15 @@ pub fn read_memory<T: Read + Write>(port: &mut T, address: u32, length: usize) -
     // request memory dump (MEMORY, "M" command)
     port.write_all(format!("m{:07x}\r", address).as_bytes())?;
     thread::sleep(DELAY_WRITE);
-
+    
     let mut buffer = Vec::new();
     let mut bytes = Vec::new();
     bytes.reserve(length);
-
+    
     // skip header
     buffer.resize(27, 0);
     port.read_exact(&mut buffer)?;
-
+    
     while bytes.len() < length {
         // load 16 two-letter byte codes
         buffer.resize(16 * 2, 0);

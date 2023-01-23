@@ -26,6 +26,97 @@ pub mod serial;
 use anyhow::Result;
 use std::convert::From;
 use std::fmt;
+use log::debug;
+use std::thread;
+use std::time::Duration;
+
+/// Interface for communicating with the MEGA65
+/// 
+/// This includes functions to read and write memory,
+/// reset, go64 etc. This should be implemented by
+/// different transfer protocols, e.g. serial and ethernet.
+pub trait M65Communicator {
+    /// Read bytes from address into buffer
+    fn read_memory(&mut self, address: u32, length: usize) -> Result<Vec<u8>>;
+    /// Write bytes to address
+    fn write_memory(&mut self, address: u16, bytes: &[u8]) -> Result<()>;
+    /// Reset computer
+    fn reset(&mut self) -> Result<()>;
+    /// Empty unwritten bytes
+    fn flush(&mut self) -> Result<()>;
+    /// Type using keystrokes
+    fn type_text(&mut self, text: &str) -> Result<()>;
+    /// Detect if in C65 mode
+    fn is_c65_mode(&mut self) -> Result<bool> {
+        let byte = self.read_memory(0xffd3030, 0)?[0];
+        Ok(byte == 0x64)
+    }
+    /// Write single byte to MEGA65
+    fn poke(&mut self, destination: u16, value: u8) -> Result<()> {
+        self.write_memory(destination, &[value])
+    }
+    /// Read single byte from MEGA65
+    fn peek(&mut self, address: u32) -> Result<u8> {
+        let bytes = self.read_memory(address, 1)?;
+        Ok(bytes[0])
+    }
+    /// If not already there, go to C64 mode via key presses
+    fn go64(&mut self) -> Result<()> {
+        debug!("Sending GO64");
+        if self.is_c65_mode()? {
+            self.type_text("go64\ry\r")?;
+            thread::sleep(Duration::from_secs(1));
+        }
+        Ok(())
+    }
+    
+    /// If not already there, go to C65 mode via a reset
+    fn go65(&mut self) -> Result<()> {
+        if !self.is_c65_mode()? {
+            self.reset()?;
+        }
+        Ok(())
+    }
+    /// Transfer to MEGA65 and optionally run PRG
+    ///
+    /// C64/C65 modes are selected from the load address
+    fn handle_prg_from_bytes(
+        &mut self,
+        bytes: &[u8],
+        load_address: LoadAddress,
+        reset_before_run: bool,
+        run: bool,
+    ) -> Result<()> {
+        if reset_before_run {
+            self.reset()?;
+        }
+        match load_address {
+            LoadAddress::Commodore65 => self.go65()?,
+            LoadAddress::Commodore64 => self.go64()?,
+            _ => {
+                return Err(anyhow::Error::msg("unsupported load address"));
+            }
+        }
+        self.write_memory(load_address.value(), bytes)?;
+        if run {
+            self.type_text("run\r")?;
+        }
+        Ok(())
+    }
+    /// Transfers and optionally run PRG to MEGA65
+    ///
+    /// Here `file` can be a local file or a url. CBM disk images are allowed and
+    /// C64/C65 modes are detected from load address.
+    fn handle_prg(
+        &mut self,
+        file: &str,
+        reset_before_run: bool,
+        run: bool,
+    ) -> Result<()> {
+        let (load_address, bytes) = io::load_prg(file)?;
+        self.handle_prg_from_bytes(&bytes, load_address, reset_before_run, run)
+    }
+}
 
 /// Load address for Commodore PRG files
 #[allow(dead_code)]
@@ -66,7 +157,7 @@ impl LoadAddress {
             _ => LoadAddress::Custom(address),
         }
     }
-
+    
     /// Extract load address from first two bytes, little endian.
     ///
     /// Examples:

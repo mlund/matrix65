@@ -14,7 +14,7 @@
 
 use anyhow::Result;
 use clap::Parser;
-use matrix65::{filehost, serial};
+use matrix65::{filehost, serial, M65Communicator};
 use pretty_env_logger::env_logger::DEFAULT_FILTER_ENV;
 
 mod commands;
@@ -39,28 +39,31 @@ fn do_main() -> Result<()> {
 
     let mut port = serial::open_port(&args.port, args.baud)?;
 
+    let mut comm: Box<dyn M65Communicator> = Box::new(serial::M65Serial::open(&args.port, args.baud)?);
+
+
     match args.command {
-        input::Commands::Reset { c64 } => commands::reset(&mut port, c64)?,
-        input::Commands::Filehost {} => commands::filehost(&mut port)?,
-        input::Commands::Cmd {} => repl::start_repl(&mut port)?,
+        input::Commands::Reset { c64 } => commands::reset(&mut comm, c64)?,
+        input::Commands::Filehost {} => commands::filehost(&mut comm)?,
+        input::Commands::Cmd {} => repl::start_repl(&mut comm)?,
         input::Commands::Type { text } => {
-            serial::type_text(&mut port, text.as_str())?;
+            comm.type_text(text.as_str())?;
         }
         input::Commands::Prg { file, reset, run } => {
-            serial::handle_prg(&mut port, &file, reset, run)?;
+            comm.handle_prg(&file, reset, run)?;
         }
         input::Commands::Peek {
             address,
             length,
             outfile,
             disassemble,
-        } => commands::peek(&mut port, address, length, outfile, disassemble)?,
+        } => commands::peek(&mut comm, address, length, outfile, disassemble)?,
 
         input::Commands::Poke {
             address,
             file,
             value,
-        } => commands::poke(file, value, address, &mut port)?,
+        } => commands::poke(file, value, address, &mut comm)?,
     }
     Ok(())
 }

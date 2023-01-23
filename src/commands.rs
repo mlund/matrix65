@@ -1,28 +1,26 @@
 use crate::filehost;
 use crate::textui;
+use matrix65::M65Communicator;
 use matrix65::io;
-use matrix65::serial;
 use parse_int::parse;
-use serialport::SerialPort;
-use std::io::{Read, Write};
 
-pub fn reset<T: Read + Write>(port: &mut T, c64: bool) -> Result<(), anyhow::Error> {
-    serial::reset(port)?;
+pub fn reset<T: M65Communicator>(comm: &mut T, c64: bool) -> Result<(), anyhow::Error> {
+    comm.reset()?;
     if c64 {
-        serial::go64(port)?
+        comm.go64()?
     };
     Ok(())
 }
 
-pub fn peek<T: Read + Write>(
-    port: &mut T,
+pub fn peek<T: M65Communicator>(
+    comm: &mut T,
     address: String,
     length: usize,
     outfile: Option<String>,
     disassemble: bool,
 ) -> Result<(), anyhow::Error> {
     let start_address = parse::<u32>(&address)?;
-    let bytes = serial::read_memory(port, start_address, length)?;
+    let bytes = comm.read_memory(start_address, length)?;
     match outfile {
         Some(name) => io::save_binary(&name, &bytes)?,
         None => {
@@ -36,11 +34,11 @@ pub fn peek<T: Read + Write>(
     Ok(())
 }
 
-pub fn poke<T: Read + Write>(
+pub fn poke<T: M65Communicator>(
     file: Option<String>,
     value: Option<u8>,
     address: String,
-    port: &mut T,
+    comm: &mut T,
 ) -> Result<(), anyhow::Error> {
     let bytes = match file {
         Some(f) => matrix65::io::load_bytes(&f)?,
@@ -53,11 +51,11 @@ pub fn poke<T: Read + Write>(
             "poking outside the 16-bit address space is currently unsupported",
         ));
     }
-    matrix65::serial::write_memory(port, parsed_address, &bytes)?;
+    comm.write_memory(parsed_address, &bytes)?;
     Ok(())
 }
 
-pub fn filehost(port: &mut Box<dyn SerialPort>) -> Result<(), anyhow::Error> {
+pub fn filehost(comm: &mut Box<dyn M65Communicator>) -> Result<(), anyhow::Error> {
     let mut entries: Vec<_> = filehost::get_file_list()?
         .iter()
         .cloned()
@@ -67,6 +65,6 @@ pub fn filehost(port: &mut Box<dyn SerialPort>) -> Result<(), anyhow::Error> {
         })
         .collect();
     entries.sort_by_key(|i| i.title.clone());
-    textui::terminal::start_tui(port, &entries)?;
+    textui::terminal::start_tui(&mut comm, &entries)?;
     Ok(())
 }

@@ -20,7 +20,7 @@ use crossterm::{
 
 use crate::textui::{ui, App, AppWidgets};
 use anyhow::Result;
-use matrix65::filehost;
+use matrix65::{filehost, M65Communicator};
 use serialport::SerialPort;
 use std::io;
 use tui::{
@@ -30,7 +30,7 @@ use tui::{
 
 /// This is the first entry for the TUI
 pub fn start_tui(
-    port: &mut Box<dyn SerialPort>,
+    comm: Box<dyn M65Communicator>,
     filehost_items: &[filehost::Record],
 ) -> Result<()> {
     // setup terminal
@@ -41,7 +41,7 @@ pub fn start_tui(
     let mut terminal = Terminal::new(backend)?;
 
     // create app and run it
-    let app = App::new(port, filehost_items);
+    let app = App::new(comm, filehost_items);
     let res = run_app(&mut terminal, app);
 
     // restore terminal
