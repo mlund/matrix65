@@ -51,7 +51,7 @@ pub struct App {
 }
 
 impl App {
-    fn new(comm: Box<dyn M65Communicator>, filehost_items: &[filehost::Record]) -> App {
+    fn new(comm: &mut Box<dyn M65Communicator>, filehost_items: &[filehost::Record]) -> App {
         App {
             messages: vec![
                 "Matrix65 welcomes you to the FileHost!".to_string(),

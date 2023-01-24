@@ -37,10 +37,7 @@ fn do_main() -> Result<()> {
     }
     pretty_env_logger::init();
 
-    let mut port = serial::open_port(&args.port, args.baud)?;
-
     let mut comm: Box<dyn M65Communicator> = Box::new(serial::M65Serial::open(&args.port, args.baud)?);
-
 
     match args.command {
         input::Commands::Reset { c64 } => commands::reset(&mut comm, c64)?,
@@ -57,13 +54,13 @@ fn do_main() -> Result<()> {
             length,
             outfile,
             disassemble,
-        } => commands::peek(&mut comm, address, length, outfile, disassemble)?,
+        } => commands::peek(comm.as_mut(), address, length, outfile, disassemble)?,
 
         input::Commands::Poke {
             address,
             file,
             value,
-        } => commands::poke(file, value, address, &mut comm)?,
+        } => commands::poke(file, value, address, comm.as_mut())?,
     }
     Ok(())
 }

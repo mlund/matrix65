@@ -4,7 +4,7 @@ use matrix65::M65Communicator;
 use matrix65::io;
 use parse_int::parse;
 
-pub fn reset<T: M65Communicator>(comm: &mut T, c64: bool) -> Result<(), anyhow::Error> {
+pub fn reset(comm: &mut Box<dyn M65Communicator>, c64: bool) -> Result<(), anyhow::Error> {
     comm.reset()?;
     if c64 {
         comm.go64()?
@@ -12,8 +12,8 @@ pub fn reset<T: M65Communicator>(comm: &mut T, c64: bool) -> Result<(), anyhow::
     Ok(())
 }
 
-pub fn peek<T: M65Communicator>(
-    comm: &mut T,
+pub fn peek(
+    comm: &mut dyn M65Communicator,
     address: String,
     length: usize,
     outfile: Option<String>,
@@ -34,11 +34,11 @@ pub fn peek<T: M65Communicator>(
     Ok(())
 }
 
-pub fn poke<T: M65Communicator>(
+pub fn poke(
     file: Option<String>,
     value: Option<u8>,
     address: String,
-    comm: &mut T,
+    comm: &mut dyn M65Communicator,
 ) -> Result<(), anyhow::Error> {
     let bytes = match file {
         Some(f) => matrix65::io::load_bytes(&f)?,
@@ -65,6 +65,6 @@ pub fn filehost(comm: &mut Box<dyn M65Communicator>) -> Result<(), anyhow::Error
         })
         .collect();
     entries.sort_by_key(|i| i.title.clone());
-    textui::terminal::start_tui(&mut comm, &entries)?;
+    textui::terminal::start_tui(comm, &entries)?;
     Ok(())
 }

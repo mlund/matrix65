@@ -1,5 +1,4 @@
 use crate::commands;
-use crate::serial;
 use matrix65::M65Communicator;
 use reedline_repl_rs::clap::{Arg, ArgMatches, Command};
 use reedline_repl_rs::{Repl, Result};
@@ -53,7 +52,7 @@ fn peek(_args: ArgMatches, context: &mut Context) -> Result<Option<String>> {
         .unwrap_or("1")
         .to_string()
         .parse::<usize>()?;
-    let result = commands::peek(context.comm, address, length, None, true);
+    let result = commands::peek(context.comm.as_mut(), address, length, None, true);
     handle_result(result)
 }
 
@@ -64,17 +63,17 @@ fn reset(_args: ArgMatches, context: &mut Context) -> Result<Option<String>> {
 
 /// Wrap go64 command
 fn go64(_args: ArgMatches, context: &mut Context) -> Result<Option<String>> {
-    handle_result(serial::go64(context.comm))
+    handle_result(context.comm.go64())
 }
 
 /// Wrap stop cpu command
 fn stop(_args: ArgMatches, context: &mut Context) -> Result<Option<String>> {
-    handle_result(serial::stop_cpu(context.comm))
+    handle_result(context.comm.stop_cpu())
 }
 
 /// Wrap start cpu command
 fn start(_args: ArgMatches, context: &mut Context) -> Result<Option<String>> {
-    handle_result(serial::start_cpu(context.comm))
+    handle_result(context.comm.start_cpu())
 }
 
 /// Wrap filehost command

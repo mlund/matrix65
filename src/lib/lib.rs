@@ -116,6 +116,13 @@ pub trait M65Communicator {
         let (load_address, bytes) = io::load_prg(file)?;
         self.handle_prg_from_bytes(&bytes, load_address, reset_before_run, run)
     }
+    fn stop_cpu(&mut self) -> Result<()> {
+        unimplemented!();
+    }
+    fn start_cpu(&mut self) -> Result<()> {
+        unimplemented!();
+    }
+
 }
 
 /// Load address for Commodore PRG files
