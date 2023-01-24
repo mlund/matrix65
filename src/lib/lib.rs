@@ -122,7 +122,6 @@ pub trait M65Communicator {
     fn start_cpu(&mut self) -> Result<()> {
         unimplemented!();
     }
-
 }
 
 /// Load address for Commodore PRG files
